@@ -1,0 +1,480 @@
+// ==============================================================================
+// SENTINEL GESTION - Schéma de Données Prisma (Cible PostgreSQL / Production)
+// Aligné sur PLAN_ARCHITECTURE_SENTINEL_DE_GESTION.md et le cahier des charges
+// ==============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------------------------
+// GESTION DES IDENTITÉS & AUTHENTIFICATION (Auth.js)
+// ------------------------------------------------------------------------------
+
+enum WorkspaceRole {
+  owner
+  admin
+  project_manager
+  member
+  viewer
+}
+
+model User {
+  id                    String        @id @default(uuid())
+  name                  String
+  email                 String        @unique
+  emailVerified         DateTime?
+  image                 String?
+  role                  WorkspaceRole @default(member)
+  jobTitle              String        @default("Collaborateur")
+  weeklyCapacityMinutes Int           @default(2100)
+  hourlyRate            Float         @default(75.0)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  // Relations
+  accounts              Account[]
+  sessions              Session[]
+  workspaceMembers      WorkspaceMember[]
+  assignedTasks         Task[]        @relation("TaskAssignee")
+  ledProjects           Project[]     @relation("ProjectLead")
+  timeEntries           TimeEntry[]
+  createdExpenses       ProjectExpense[]
+  forumTopics           ForumTopic[]
+  forumPosts            ForumPost[]
+  auditLogs             AuditLog[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// ------------------------------------------------------------------------------
+// ESPACE DE TRAVAIL & ORGANISATION MULTI-TENANT
+// ------------------------------------------------------------------------------
+
+model Workspace {
+  id                String   @id @default(uuid())
+  name              String
+  slug              String   @unique
+  iconKey           String   @default("shield")
+  colorKey          String   @default("blue")
+  locale            String   @default("fr-FR")
+  timezone          String   @default("Europe/Paris")
+  currency          String   @default("EUR")
+  defaultHourlyRate Float    @default(75.0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  members           WorkspaceMember[]
+  projects          Project[]
+  invitations       WorkspaceInvitation[]
+  subscription      WorkspaceSubscription?
+  auditLogs         AuditLog[]
+
+  @@map("workspaces")
+}
+
+model WorkspaceMember {
+  id          String        @id @default(uuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceRole @default(member)
+  joinedAt    DateTime      @default(now())
+
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@map("workspace_members")
+}
+
+model WorkspaceInvitation {
+  id          String        @id @default(uuid())
+  workspaceId String
+  email       String
+  role        WorkspaceRole @default(member)
+  token       String        @unique
+  status      String        @default("pending") // pending, accepted, expired, revoked
+  expiresAt   DateTime
+  createdAt   DateTime      @default(now())
+
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("workspace_invitations")
+}
+
+model WorkspaceSubscription {
+  id               String   @id @default(uuid())
+  workspaceId      String   @unique
+  planCode         String   @default("discovery") // discovery, premium, team
+  status           String   @default("active")
+  currentPeriodEnd DateTime
+  storageUsedMb    Float    @default(0.0)
+
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("workspace_subscriptions")
+}
+
+// ------------------------------------------------------------------------------
+// PROJETS, PHASES & JALONS
+// ------------------------------------------------------------------------------
+
+enum ProjectStatus {
+  draft
+  active
+  on_hold
+  completed
+  archived
+}
+
+enum Priority {
+  urgent
+  high
+  medium
+  low
+}
+
+model Project {
+  id            String        @id @default(uuid())
+  workspaceId   String
+  name          String
+  reference     String
+  description   String        @db.Text
+  status        ProjectStatus @default(active)
+  priority      Priority      @default(medium)
+  iconKey       String        @default("folder")
+  colorKey      String        @default("blue")
+  startDate     DateTime
+  dueDate       DateTime
+  leadUserId    String?
+  githubRepoUrl String?
+  tags          String[]      @default([])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  workspace     Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  leadUser      User?         @relation("ProjectLead", fields: [leadUserId], references: [id])
+  phases        ProjectPhase[]
+  tasks         Task[]
+  milestones    ProjectMilestone[]
+  documents     ProjectDocument[]
+  expenses      ProjectExpense[]
+  budget        ProjectBudget?
+  timeEntries   TimeEntry[]
+  sprints       Sprint[]
+  wikiPages     WikiPage[]
+  risks         ProjectRisk[]
+  shares        ProjectShare[]
+  dependencies  TaskDependency[]
+  forumTopics   ForumTopic[]
+
+  @@map("projects")
+}
+
+model ProjectPhase {
+  id          String   @id @default(uuid())
+  projectId   String
+  name        String
+  description String   @db.Text
+  order       Int
+  startDate   DateTime
+  endDate     DateTime
+  iconKey     String?  @default("layers")
+  colorKey    String?  @default("blue")
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+
+  @@map("project_phases")
+}
+
+model ProjectMilestone {
+  id          String   @id @default(uuid())
+  projectId   String
+  name        String
+  description String?  @db.Text
+  dueDate     DateTime
+  status      String   @default("planned") // planned, reached, late
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_milestones")
+}
+
+// ------------------------------------------------------------------------------
+// TÂCHES & DÉPENDANCES
+// ------------------------------------------------------------------------------
+
+enum TaskStatus {
+  todo
+  in_progress
+  in_review
+  done
+}
+
+model Task {
+  id              String      @id @default(uuid())
+  projectId       String
+  phaseId         String?
+  parentTaskId    String?
+  title           String
+  description     String      @db.Text
+  status          TaskStatus  @default(todo)
+  priority        Priority    @default(medium)
+  assigneeId      String?
+  startDate       DateTime?
+  dueDate         DateTime?
+  completedAt     DateTime?
+  estimateMinutes Int         @default(240)
+  actualMinutes   Int         @default(0)
+  storyPoints     Int?
+  labels          String[]    @default([])
+  checklist       Json        @default("[]") // [{ id, title, isCompleted }]
+  order           Int         @default(0)
+  version         Int         @default(1)
+  deletedAt       DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  phase           ProjectPhase? @relation(fields: [phaseId], references: [id], onDelete: SetNull)
+  parentTask      Task?       @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: Cascade)
+  subtasks        Task[]      @relation("TaskSubtasks")
+  assignee        User?       @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  timeEntries     TimeEntry[]
+  predecessors    TaskDependency[] @relation("SuccessorTask")
+  successors      TaskDependency[] @relation("PredecessorTask")
+
+  @@map("tasks")
+}
+
+model TaskDependency {
+  id                String   @id @default(uuid())
+  projectId         String
+  predecessorTaskId String
+  successorTaskId   String
+  dependencyType    String   @default("finish_to_start")
+  lagMinutes        Int      @default(0)
+  createdAt         DateTime @default(now())
+
+  project           Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  predecessorTask   Task     @relation("PredecessorTask", fields: [predecessorTaskId], references: [id], onDelete: Cascade)
+  successorTask     Task     @relation("SuccessorTask", fields: [successorTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([predecessorTaskId, successorTaskId])
+  @@map("task_dependencies")
+}
+
+// ------------------------------------------------------------------------------
+// FINANCES, TEMPS, SPRINTS, WIKI, RISQUES & COLLABORATION
+// ------------------------------------------------------------------------------
+
+model ProjectExpense {
+  id          String   @id @default(uuid())
+  projectId   String
+  title       String
+  category    String   // labor, software, hardware, consulting, marketing, other
+  amount      Float
+  date        DateTime
+  status      String   @default("pending") // planned, paid, pending
+  receiptUrl  String?
+  createdById String
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy   User     @relation(fields: [createdById], references: [id])
+
+  @@map("project_expenses")
+}
+
+model ProjectBudget {
+  id           String   @id @default(uuid())
+  projectId    String   @unique
+  targetBudget Float
+  currency     String   @default("EUR")
+
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_budgets")
+}
+
+model TimeEntry {
+  id              String   @id @default(uuid())
+  projectId       String
+  taskId          String?
+  userId          String
+  description     String
+  durationMinutes Int
+  date            DateTime
+  hourlyRate      Float?
+  createdAt       DateTime @default(now())
+
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  task            Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  user            User     @relation(fields: [userId], references: [id])
+
+  @@map("time_entries")
+}
+
+model Sprint {
+  id        String   @id @default(uuid())
+  projectId String
+  name      String
+  goal      String   @db.Text
+  startDate DateTime
+  endDate   DateTime
+  status    String   @default("future") // future, active, completed
+  taskIds   String[] @default([])
+
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("sprints")
+}
+
+model WikiPage {
+  id         String   @id @default(uuid())
+  projectId  String
+  title      String
+  slug       String
+  content    String   @db.Text
+  category   String   // architecture, meeting_notes, specifications, onboarding, guides
+  authorName String
+  pinned     Boolean  @default(false)
+  updatedAt  DateTime @updatedAt
+
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, slug])
+  @@map("wiki_pages")
+}
+
+model ProjectRisk {
+  id             String   @id @default(uuid())
+  projectId      String
+  title          String
+  description    String   @db.Text
+  probability    Int      // 1..5
+  impact         Int      // 1..5
+  severity       String   // low, medium, high, critical
+  status         String   @default("identified") // identified, mitigating, materialized, closed
+  ownerId        String
+  mitigationPlan String   @db.Text
+  createdAt      DateTime @default(now())
+
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_risks")
+}
+
+model ProjectDocument {
+  id         String   @id @default(uuid())
+  projectId  String
+  title      String
+  category   String
+  content    String   @db.Text
+  authorName String
+  tags       String[] @default([])
+  updatedAt  DateTime @updatedAt
+
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_documents")
+}
+
+model ProjectShare {
+  id              String   @id @default(uuid())
+  projectId       String
+  sharedWithEmail String
+  permission      String   @default("view") // view, edit
+  token           String   @unique
+  createdAt       DateTime @default(now())
+
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_shares")
+}
+
+model ForumTopic {
+  id             String      @id @default(uuid())
+  projectId      String
+  authorId       String
+  title          String
+  body           String      @db.Text
+  category       String      // general, qa, decisions, announcements
+  isPinned       Boolean     @default(false)
+  replyCount     Int         @default(0)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  project        Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author         User        @relation(fields: [authorId], references: [id])
+  posts          ForumPost[]
+
+  @@map("forum_topics")
+}
+
+model ForumPost {
+  id        String   @id @default(uuid())
+  topicId   String
+  authorId  String
+  body      String   @db.Text
+  reactions Json     @default("{}") // emoji -> [userIds]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  topic     ForumTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  author    User       @relation(fields: [authorId], references: [id])
+
+  @@map("forum_posts")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  workspaceId String
+  actorId     String
+  entityType  String
+  entityId    String
+  action      String   // create, update, delete, restore, login, share, export
+  changes     Json?
+  ip          String?
+  createdAt   DateTime @default(now())
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  actor       User      @relation(fields: [actorId], references: [id])
+
+  @@map("audit_logs")
+}
