@@ -1,19 +1,93 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Shield, RefreshCcw, Lock, CheckCircle2, 
-  FileText, Database, ShieldAlert, Key, Globe, Eye
+  FileText, Database, ShieldAlert, Key, Globe, Eye,
+  Zap, Send, Check, AlertCircle, BellRing
 } from 'lucide-react';
 import { useSentinel } from '@/lib/store';
 import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog';
 import { formatRelativeTimeFrench } from '@/lib/dateUtils';
+import { 
+  DEFAULT_AUTOMATION_RULES, 
+  formatWebhookPayload, 
+  dispatchWebhookNotification 
+} from '@/lib/automations/ruleEngine';
 
 export function SettingsView() {
   const { workspace, currentUser, users, activities, resetToFactoryData } = useSentinel();
-  const [activeTab, setActiveTab] = useState<'general' | 'security' | 'audit' | 'data'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'security' | 'audit' | 'data' | 'automations'>('general');
   const [resetDone, setResetDone] = useState(false);
   const [showConfirmReset, setShowConfirmReset] = useState(false);
+
+  // Configuration Webhooks & Automatismes
+  const [rules, setRules] = useState(DEFAULT_AUTOMATION_RULES);
+  const [webhookPlatform, setWebhookPlatform] = useState<'slack' | 'teams' | 'generic'>('slack');
+  const [webhookUrl, setWebhookUrl] = useState('');
+  const [webhookEnabled, setWebhookEnabled] = useState(false);
+  const [testResult, setTestResult] = useState<{ testing: boolean; success?: boolean; message?: string } | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('sentinel_webhook_config');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.platform) setWebhookPlatform(parsed.platform);
+        if (parsed.url) setWebhookUrl(parsed.url);
+        if (typeof parsed.enabled === 'boolean') setWebhookEnabled(parsed.enabled);
+      }
+    } catch {
+      // Ignorer
+    }
+  }, []);
+
+  const handleSaveWebhookConfig = () => {
+    try {
+      localStorage.setItem('sentinel_webhook_config', JSON.stringify({
+        platform: webhookPlatform,
+        url: webhookUrl,
+        enabled: webhookEnabled,
+      }));
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2500);
+    } catch {
+      // Ignorer
+    }
+  };
+
+  const handleTestWebhook = async () => {
+    if (!webhookUrl || !webhookUrl.startsWith('https://')) {
+      setTestResult({ testing: false, success: false, message: 'Veuillez saisir une URL HTTPS valide (ex: https://hooks.slack.com/...)' });
+      return;
+    }
+    setTestResult({ testing: true });
+    try {
+      const payload = formatWebhookPayload(
+        webhookPlatform,
+        'Test de Connexion SENTINEL GESTION',
+        'Le connecteur Webhook fonctionne avec succès depuis votre instance Sentinel.',
+        'Projet Démonstration'
+      );
+      const res = await dispatchWebhookNotification(webhookUrl, payload);
+      setTestResult({
+        testing: false,
+        success: res.success,
+        message: res.success ? 'Notification test envoyée avec succès !' : (res.error || 'Échec de transmission'),
+      });
+    } catch (err) {
+      setTestResult({
+        testing: false,
+        success: false,
+        message: (err as Error).message,
+      });
+    }
+  };
+
+  const toggleRule = (ruleId: string) => {
+    setRules(prev => prev.map(r => r.id === ruleId ? { ...r, enabled: !r.enabled } : r));
+  };
 
   const handleConfirmReset = () => {
     resetToFactoryData();
@@ -95,6 +169,18 @@ export function SettingsView() {
         >
           <Database className="w-4 h-4" />
           <span>Données & Sauvegardes</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('automations')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition ${
+            activeTab === 'automations'
+              ? 'bg-[#0066FF] text-white shadow-md shadow-blue-500/20'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <Zap className="w-4 h-4" />
+          <span>Automatismes & Webhooks</span>
         </button>
       </div>
 
@@ -329,6 +415,181 @@ export function SettingsView() {
                   <CheckCircle2 className="w-4 h-4" /> Données réinitialisées avec succès !
                 </span>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ONGLET AUTOMATISMES & WEBHOOKS */}
+      {activeTab === 'automations' && (
+        <div className="space-y-6 animate-in fade-in">
+          {/* Règles d'Automatismes */}
+          <div className="p-5 bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-blue-50 text-[#0066FF] dark:bg-blue-950/50">
+                  <Zap className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                    Règles Actives & Déclencheurs Événementiels
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Exécution automatique d’actions réactives (« Si ceci alors cela »)
+                  </p>
+                </div>
+              </div>
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-[#0066FF] border border-blue-200 dark:border-blue-900">
+                {rules.filter(r => r.enabled).length} / {rules.length} actives
+              </span>
+            </div>
+
+            <div className="space-y-3 pt-2">
+              {rules.map(rule => (
+                <div 
+                  key={rule.id}
+                  className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-900 dark:text-white">
+                        {rule.name}
+                      </span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                        {rule.trigger}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {rule.description}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => toggleRule(rule.id)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                      rule.enabled ? 'bg-[#0066FF]' : 'bg-slate-300 dark:bg-slate-700'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        rule.enabled ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Connecteurs Webhooks Sortants */}
+          <div className="p-5 bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/50">
+                <BellRing className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Connecteur Webhooks Sortants (Slack / Teams / Generic)
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Diffusez instantanément les alertes et jalons vers vos canaux d’équipe
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Plateforme Cible
+                  </label>
+                  <select
+                    value={webhookPlatform}
+                    onChange={e => setWebhookPlatform(e.target.value as 'slack' | 'teams' | 'generic')}
+                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0066FF]"
+                  >
+                    <option value="slack">Slack Incoming Webhook</option>
+                    <option value="teams">Microsoft Teams MessageCard</option>
+                    <option value="generic">Générique JSON (Custom API / Zapier)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Statut du connecteur
+                  </label>
+                  <div className="flex items-center gap-3 h-[38px]">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={webhookEnabled}
+                        onChange={e => setWebhookEnabled(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0066FF]"></div>
+                    </label>
+                    <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                      {webhookEnabled ? 'Actif en temps réel' : 'Désactivé'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  URL du Webhook (Sécurisée HTTPS)
+                </label>
+                <input
+                  type="url"
+                  value={webhookUrl}
+                  onChange={e => setWebhookUrl(e.target.value)}
+                  placeholder="https://hooks.slack.com/services/... ou https://outlook.office.com/webhook/..."
+                  className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-[#0066FF]"
+                />
+              </div>
+
+              {testResult && (
+                <div className={`p-3 rounded-xl border text-xs flex items-center gap-2 ${
+                  testResult.success
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+                    : 'bg-red-50 text-red-800 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800'
+                }`}>
+                  {testResult.success ? (
+                    <Check className="w-4 h-4 flex-shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  )}
+                  <span>{testResult.message}</span>
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleSaveWebhookConfig}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#0066FF] hover:bg-blue-600 text-white text-xs font-semibold rounded-xl transition shadow-sm"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Enregistrer la configuration</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleTestWebhook}
+                  disabled={testResult?.testing}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-xl transition border border-slate-200 dark:border-slate-700 disabled:opacity-50"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{testResult?.testing ? 'Envoi en cours...' : 'Tester le Webhook'}</span>
+                </button>
+
+                {saveSuccess && (
+                  <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                    <CheckCircle2 className="w-4 h-4" /> Configuration enregistrée !
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>

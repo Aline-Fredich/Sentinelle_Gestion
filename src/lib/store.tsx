@@ -22,6 +22,12 @@ import { generateId } from '@/lib/idUtils';
 import { wouldCreateDependencyCycle } from '@/domain/dependencies';
 import { initializeAndMigrateDatabase, db } from '@/lib/repository';
 import { createLocalAvatarSvg } from '@/lib/avatarUtils';
+import { 
+  evaluateChecklistAutoReview, 
+  evaluateBudgetThreshold, 
+  formatWebhookPayload, 
+  dispatchWebhookNotification 
+} from '@/lib/automations/ruleEngine';
 
 export interface FilterState {
   memberId?: string;
@@ -787,16 +793,48 @@ export function SentinelProvider({ children }: { children: React.ReactNode }) {
   }, [tasks, logActivity]);
 
   const toggleChecklistItem = useCallback((taskId: string, itemId: string) => {
+    let triggeredAutoReviewMessage: string | null = null;
+    let targetProjectId: string | undefined;
+
     setTasks(prev => prev.map(t => {
       if (t.id !== taskId) return t;
+      targetProjectId = t.projectId;
       const updatedChecklist = t.checklist.map(c => c.id === itemId ? { ...c, isCompleted: !c.isCompleted } : c);
-      return {
+      const updatedTask: Task = {
         ...t,
         checklist: updatedChecklist,
         updatedAt: new Date().toISOString(),
       };
+
+      // Règle d'automatisation : Passage automatique en révision si 100% complété
+      const rule = evaluateChecklistAutoReview(updatedTask);
+      if (rule?.executed && rule.payload?.status) {
+        updatedTask.status = rule.payload.status as TaskStatus;
+        triggeredAutoReviewMessage = rule.message;
+      }
+
+      return updatedTask;
     }));
-  }, []);
+
+    if (triggeredAutoReviewMessage) {
+      logActivity('task_status_changed', triggeredAutoReviewMessage, taskId, targetProjectId);
+      addNotification('Automatisation appliquée', triggeredAutoReviewMessage, 'task');
+
+      // Notification Webhook si configuré
+      try {
+        const savedWebhook = typeof window !== 'undefined' ? localStorage.getItem('sentinel_webhook_config') : null;
+        if (savedWebhook) {
+          const cfg = JSON.parse(savedWebhook);
+          if (cfg.enabled && cfg.url) {
+            const payload = formatWebhookPayload(cfg.platform || 'slack', 'Passage Automatique en Révision', triggeredAutoReviewMessage);
+            dispatchWebhookNotification(cfg.url, payload).catch(() => {});
+          }
+        }
+      } catch {
+        // Ignorer
+      }
+    }
+  }, [logActivity, addNotification]);
 
   const addChecklistItem = useCallback((taskId: string, title: string) => {
     if (!title.trim()) return;
@@ -1154,10 +1192,35 @@ export function SentinelProvider({ children }: { children: React.ReactNode }) {
       ...data,
       id: generateId('exp'),
     };
-    setExpenses(prev => [newExp, ...prev]);
+    setExpenses(prev => {
+      const nextExpenses = [newExp, ...prev];
+      // Évaluation règle d'alerte budgétaire (85%)
+      const prjBudget = budgets.find(b => b.projectId === data.projectId);
+      if (prjBudget) {
+        const alertResult = evaluateBudgetThreshold(prjBudget, nextExpenses);
+        if (alertResult?.executed) {
+          addNotification('Alerte Seuil Budgétaire', alertResult.message, 'project');
+
+          // Notification Webhook si configuré
+          try {
+            const savedWebhook = typeof window !== 'undefined' ? localStorage.getItem('sentinel_webhook_config') : null;
+            if (savedWebhook) {
+              const cfg = JSON.parse(savedWebhook);
+              if (cfg.enabled && cfg.url) {
+                const payload = formatWebhookPayload(cfg.platform || 'slack', 'Alerte Consommation Budgétaire', alertResult.message);
+                dispatchWebhookNotification(cfg.url, payload).catch(() => {});
+              }
+            }
+          } catch {
+            // Ignorer
+          }
+        }
+      }
+      return nextExpenses;
+    });
     logActivity('task_updated', `a ajouté une dépense de ${data.amount}€ (${data.title}).`);
     return newExp;
-  }, [logActivity]);
+  }, [budgets, logActivity, addNotification]);
 
   const deleteExpense = useCallback((id: string) => {
     setExpenses(prev => prev.filter(e => e.id !== id));
