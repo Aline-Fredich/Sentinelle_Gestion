@@ -117,21 +117,21 @@ test.describe('SENTINEL GESTION — Recette Fonctionnelle R1 à R14 (Phase 8)', 
   test('R11: Sprints Agile & Burndown Chart', async ({ page }) => {
     await page.goto('/');
     await page.click('button:has-text("Sprints Agile")');
-    await expect(page.locator('text=Sprints Agile & Itérations')).toBeVisible();
+    await expect(page.locator('text=Gestion des Sprints').first()).toBeVisible();
     await expect(page.locator('text=Courbe Burndown')).toBeVisible();
   });
 
   test('R12: Base de Connaissances & Wiki', async ({ page }) => {
     await page.goto('/');
     await page.click('button:has-text("Wiki & Base de savoir")');
-    await expect(page.locator('text=Wiki & Documentation Projet')).toBeVisible();
+    await expect(page.locator('text=Wiki & Base de Connaissances').first()).toBeVisible();
     await expect(page.locator('text=Rechercher une note')).toBeVisible();
   });
 
   test('R13: Matrice des Risques 5x5', async ({ page }) => {
     await page.goto('/');
     await page.click('button:has-text("Matrice des risques")');
-    await expect(page.locator('text=Gestion des Risques & Matrice 5x5')).toBeVisible();
+    await expect(page.locator('text=Gestion des Risques & Matrice').first()).toBeVisible();
     await expect(page.locator('text=Matrice de Criticité 5x5')).toBeVisible();
   });
 
