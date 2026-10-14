@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test src/domain/__tests__/domain.test.ts",
+    "test": "node --experimental-strip-types --test src/domain/__tests__/domain.test.ts src/lib/importers/__tests__/importers.test.ts src/lib/content/__tests__/content.test.ts src/lib/migration/__tests__/migration.test.ts src/lib/security/__tests__/security.test.ts src/lib/automations/__tests__/automations.test.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {

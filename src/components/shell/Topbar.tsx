@@ -3,17 +3,20 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Search, Filter, Plus, Bell, Moon, Sun, 
-  X, Share2, Play, Square, Clock, Download, Upload 
+  X, Share2, Play, Square, Clock, Download, Upload, ShieldCheck, FileText 
 } from 'lucide-react';
 import { useSentinel } from '@/lib/store';
 import { formatRelativeTimeFrench } from '@/lib/dateUtils';
 import { TaskPriority, TaskStatus } from '@/types/sentinel';
+import { SyncStatusBadge } from '@/components/sync/SyncStatusBadge';
 
 interface TopbarProps {
   onOpenNewTaskModal: () => void;
   onOpenShareModal?: () => void;
   onOpenExportModal?: () => void;
   onOpenImportModal?: () => void;
+  onOpenSecurityModal?: () => void;
+  onOpenReportModal?: () => void;
 }
 
 export function Topbar({
@@ -21,6 +24,8 @@ export function Topbar({
   onOpenShareModal,
   onOpenExportModal,
   onOpenImportModal,
+  onOpenSecurityModal,
+  onOpenReportModal,
 }: TopbarProps) {
   const { 
     activeView, currentProject, activeProjectId, 
@@ -410,6 +415,17 @@ export function Topbar({
           </button>
         )}
 
+        {/* Bouton Synthèse Exécutive CoDir */}
+        {onOpenReportModal && (
+          <button
+            onClick={onOpenReportModal}
+            className="p-2 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            title="Synthèse Exécutive pour CoDir / Copil (Rapport PDF)"
+          >
+            <FileText className="w-4 h-4" />
+          </button>
+        )}
+
         {/* Bouton Exporter */}
         {onOpenExportModal && (
           <button
@@ -494,6 +510,20 @@ export function Topbar({
             </div>
           )}
         </div>
+
+        {/* Indicateur de synchronisation & Hors-ligne */}
+        <SyncStatusBadge />
+
+        {/* Bouton Sécurité & Conformité RGPD */}
+        {onOpenSecurityModal && (
+          <button
+            onClick={onOpenSecurityModal}
+            className="p-2 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            title="Sécurité, Journal d'Audit & Conformité RGPD"
+          >
+            <ShieldCheck className="w-4 h-4" />
+          </button>
+        )}
 
         {/* Toggle Mode Clair / Sombre */}
         <button

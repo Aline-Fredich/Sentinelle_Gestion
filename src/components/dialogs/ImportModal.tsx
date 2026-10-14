@@ -1,151 +1,70 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Upload, CheckCircle2, Info } from 'lucide-react';
+import { X, Upload, CheckCircle2, Info, FileSpreadsheet, Layers, CheckSquare, Sparkles } from 'lucide-react';
 import { useSentinel } from '@/lib/store';
-import { Task, TaskPriority, TaskStatus } from '@/types/sentinel';
+import { Task } from '@/types/sentinel';
+import { parseExcelCsv, parseTrelloJson, parseAsanaCsv, parseNotionCsv, ExternalSourceType } from '@/lib/importers/externalImporters';
 
 interface ImportModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function ImportModal({ isOpen, onClose }: ImportModalProps) {
-  const { importTasksFromCSV } = useSentinel();
-  const [csvText, setCsvText] = useState(
-`Titre;Description;Statut;Priorite;Echeance;Heures
-"Audit de robustesse du pare-feu";"Vérification des règles entrantes";"todo";"high";"2026-10-25";"8"
-"Mise à jour des certificats TLS";"Renouvellement des clés et tests SSL";"in_progress";"urgent";"2026-10-18";"4"
-"Documentation d’intégration API";"Rédaction du guide pour les partenaires";"todo";"medium";"2026-11-02";"6"`
-  );
+const TEMPLATES: Record<ExternalSourceType, string> = {
+  excel_csv: `Titre;Description;Statut;Priorite;Echeance;Heures
+"Audit de sécurité TLS 1.3";"Vérification des certificats et des suites cryptographiques";"todo";"high";"2026-10-25";"8"
+"Mise à jour des dépendances";"Audit npm et suppression des vulnérabilités";"in_progress";"urgent";"2026-10-18";"4"
+"Documentation API Partenaires";"Rédaction des spécifications OpenAPI";"todo";"medium";"2026-11-02";"6"`,
 
+  trello_json: `{"name":"Tableau Démo","lists":[{"id":"l1","name":"À faire"},{"id":"l2","name":"En cours"}],"cards":[{"name":"Tâche importée de Trello","desc":"Détail de la carte","idList":"l1","due":"2026-10-30T10:00:00Z","labels":[{"name":"Priorité Haute"}]}]}`,
+
+  asana_csv: `Task ID,Created At,Completed At,Last Modified,Name,Section/Column,Assignee,Due Date,Tags,Notes,Projects
+1,2026-10-01,,,Rédaction charte éditoriale,À faire,Thomas,2026-10-28,Contenu,Guide du ton et de la voix,SENTINEL GESTION`,
+
+  notion_csv: `Name,Status,Date,Tags,Priority,Notes
+Mise en place de l'onboarding,In Progress,2026-10-22,UX,High,Intégrer le sélecteur de mode`
+};
+
+export function ImportModal({ isOpen, onClose }: ImportModalProps) {
+  const { importTasksFromCSV, activeProjectId, projects } = useSentinel();
+  const [sourceType, setSourceType] = useState<ExternalSourceType>('excel_csv');
+  const [rawText, setRawText] = useState(TEMPLATES.excel_csv);
   const [previewTasks, setPreviewTasks] = useState<Partial<Task>[]>([]);
   const [importReport, setImportReport] = useState<{ imported: number; errors: string[] } | null>(null);
 
   if (!isOpen) return null;
 
-  // Découpage robuste d'une ligne CSV respectant les guillemets
-  const splitCsvLine = (line: string, sep: string): string[] => {
-    const values: string[] = [];
-    let current = '';
-    let inQuotes = false;
-
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      if (char === '"') {
-        if (inQuotes && line[i + 1] === '"') {
-          current += '"';
-          i++; // Sauter le guillemet échappé
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if (char === sep && !inQuotes) {
-        values.push(current.trim());
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-    values.push(current.trim());
-    return values;
+  const handleSourceChange = (newSource: ExternalSourceType) => {
+    setSourceType(newSource);
+    setRawText(TEMPLATES[newSource]);
+    setPreviewTasks([]);
   };
 
-  const parseCsv = () => {
-    const rawLines = csvText.trim().split(/\r?\n/).filter(l => l.trim().length > 0);
-    if (rawLines.length < 2) return;
-
-    const firstLine = rawLines[0];
-    const sep = firstLine.includes(';') ? ';' : ',';
-
-    const headerCols = splitCsvLine(firstLine, sep).map(h => 
-      h.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9_]/g, '')
-    );
-
-    // Recherche d'index par nom de colonne
-    const titleIdx = headerCols.findIndex(h => h.includes('titre') || h.includes('title') || h.includes('task'));
-    const descIdx = headerCols.findIndex(h => h.includes('desc'));
-    const statusIdx = headerCols.findIndex(h => h.includes('statut') || h.includes('status'));
-    const priorityIdx = headerCols.findIndex(h => h.includes('priorit') || h.includes('priority'));
-    const dueIdx = headerCols.findIndex(h => h.includes('echeance') || h.includes('due'));
-    const startIdx = headerCols.findIndex(h => h.includes('debut') || h.includes('start'));
-    const hoursIdx = headerCols.findIndex(h => h.includes('heure') || h.includes('hour') || h.includes('estimate'));
-
-    const parsed: Partial<Task>[] = [];
-
-    for (let i = 1; i < rawLines.length; i++) {
-      const cols = splitCsvLine(rawLines[i], sep);
-      if (cols.length === 0 || (cols.length === 1 && !cols[0])) continue;
-
-      let title = '';
-      let description = '';
-      let status: TaskStatus = 'todo';
-      let priority: TaskPriority = 'medium';
-      let dueDate: string | undefined;
-      let startDate: string | undefined;
-      let estimateMinutes = 120;
-
-      if (titleIdx >= 0) {
-        title = cols[titleIdx] || '';
-        description = descIdx >= 0 ? cols[descIdx] || '' : '';
-        const rawStatus = (statusIdx >= 0 ? cols[statusIdx] : 'todo').toLowerCase();
-        if (['todo', 'in_progress', 'in_review', 'done'].includes(rawStatus)) {
-          status = rawStatus as TaskStatus;
-        }
-        const rawPriority = (priorityIdx >= 0 ? cols[priorityIdx] : 'medium').toLowerCase();
-        if (['urgent', 'high', 'medium', 'low'].includes(rawPriority)) {
-          priority = rawPriority as TaskPriority;
-        }
-        dueDate = dueIdx >= 0 && cols[dueIdx] ? cols[dueIdx] : undefined;
-        startDate = startIdx >= 0 && cols[startIdx] ? cols[startIdx] : undefined;
-        if (hoursIdx >= 0 && cols[hoursIdx]) {
-          const parsedHours = parseFloat(cols[hoursIdx]);
-          if (!isNaN(parsedHours) && parsedHours > 0) {
-            estimateMinutes = Math.round(parsedHours * 60);
-          }
-        }
-      } else {
-        // Fallback positionnel : si 8 colonnes (avec ID en tête)
-        const offset = cols.length >= 8 ? 1 : 0;
-        title = cols[offset] || '';
-        description = cols[offset + 1] || '';
-        const rawStatus = (cols[offset + 2] || 'todo').toLowerCase();
-        if (['todo', 'in_progress', 'in_review', 'done'].includes(rawStatus)) {
-          status = rawStatus as TaskStatus;
-        }
-        const rawPriority = (cols[offset + 3] || 'medium').toLowerCase();
-        if (['urgent', 'high', 'medium', 'low'].includes(rawPriority)) {
-          priority = rawPriority as TaskPriority;
-        }
-        if (cols.length >= 8) {
-          startDate = cols[offset + 4] || undefined;
-          dueDate = cols[offset + 5] || undefined;
-          const parsedH = parseFloat(cols[offset + 6]);
-          if (!isNaN(parsedH) && parsedH > 0) estimateMinutes = Math.round(parsedH * 60);
-        } else {
-          dueDate = cols[offset + 4] || undefined;
-          const parsedH = parseFloat(cols[offset + 5]);
-          if (!isNaN(parsedH) && parsedH > 0) estimateMinutes = Math.round(parsedH * 60);
-        }
-      }
-
-      if (title.trim()) {
-        parsed.push({
-          title: title.trim(),
-          description,
-          status,
-          priority,
-          startDate,
-          dueDate,
-          estimateMinutes,
-        });
-      }
+  const handleGeneratePreview = () => {
+    const targetProj = activeProjectId === 'all' ? (projects[0]?.id || 'prj-1') : activeProjectId;
+    let res;
+    if (sourceType === 'excel_csv') {
+      res = parseExcelCsv(rawText, targetProj);
+    } else if (sourceType === 'trello_json') {
+      res = parseTrelloJson(rawText, targetProj);
+    } else if (sourceType === 'asana_csv') {
+      res = parseAsanaCsv(rawText, targetProj);
+    } else {
+      res = parseNotionCsv(rawText, targetProj);
     }
 
-    setPreviewTasks(parsed);
+    if (res.success && res.tasks.length > 0) {
+      setPreviewTasks(res.tasks);
+    } else {
+      alert(res.errors.join('\n') || 'Aucune tâche valide trouvée.');
+    }
   };
 
   const handleExecuteImport = () => {
-    if (previewTasks.length === 0) parseCsv();
+    if (previewTasks.length === 0) {
+      handleGeneratePreview();
+    }
     const result = importTasksFromCSV(previewTasks);
     setImportReport(result);
   };
@@ -165,14 +84,14 @@ export function ImportModal({ isOpen, onClose }: ImportModalProps) {
             </div>
             <div>
               <h3 id="import-modal-title" className="text-sm font-bold text-slate-900 dark:text-white">
-                Assistant d’importation CSV
+                Centre d’Importation Multi-Sources
               </h3>
               <p className="text-xs text-slate-500">
-                Prévisualisez et validez les tâches avant insertion en base
+                Importez vos données depuis Excel, Trello, Asana ou Notion
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <button onClick={onClose} aria-label="Fermer" className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -200,24 +119,59 @@ export function ImportModal({ isOpen, onClose }: ImportModalProps) {
           </div>
         ) : (
           <div className="space-y-4">
+            {/* Sélecteur de source */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                Format de la source d’origine
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { id: 'excel_csv', label: 'Excel / CSV', icon: FileSpreadsheet },
+                  { id: 'trello_json', label: 'Trello JSON', icon: Layers },
+                  { id: 'asana_csv', label: 'Asana CSV', icon: CheckSquare },
+                  { id: 'notion_csv', label: 'Notion CSV', icon: Sparkles },
+                ].map(src => {
+                  const Icon = src.icon;
+                  const isSelected = sourceType === src.id;
+                  return (
+                    <button
+                      key={src.id}
+                      type="button"
+                      onClick={() => handleSourceChange(src.id as ExternalSourceType)}
+                      className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center gap-1.5 ${
+                        isSelected 
+                          ? 'border-[#0066FF] bg-blue-50/70 dark:bg-blue-950/50 text-[#0066FF] font-bold ring-1 ring-[#0066FF]' 
+                          : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span className="text-[11px]">{src.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="p-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 text-blue-900 dark:text-blue-200 text-xs flex items-start gap-2">
               <Info className="w-4 h-4 text-[#0066FF] flex-shrink-0 mt-0.5" />
               <span>
-                Format attendu : <code>Titre;Description;Statut;Priorite;Echeance;Heures</code>.<br />
-                Compatible avec les exports de SENTINEL GESTION et tableurs (Excel, Calc).
+                {sourceType === 'excel_csv' && 'Format : Titre;Description;Statut;Priorite;Echeance;Heures (virgule ou point-virgule acceptés).'}
+                {sourceType === 'trello_json' && 'Collez le contenu du fichier exporté depuis Menu Trello > Plus > Imprimer et exporter > Exporter en JSON.'}
+                {sourceType === 'asana_csv' && 'Collez le contenu de l’export CSV Asana généré depuis les options du projet.'}
+                {sourceType === 'notion_csv' && 'Collez le contenu de l’export CSV de votre base de données de tâches Notion.'}
               </span>
             </div>
 
-            {/* Saisie ou collage CSV */}
+            {/* Saisie ou collage */}
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Données CSV (séparateur point-virgule ou virgule)
+                Contenu à importer
               </label>
               <textarea
                 rows={5}
-                value={csvText}
+                value={rawText}
                 onChange={(e) => {
-                  setCsvText(e.target.value);
+                  setRawText(e.target.value);
                   setPreviewTasks([]);
                 }}
                 className="w-full p-3 font-mono text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
@@ -228,7 +182,7 @@ export function ImportModal({ isOpen, onClose }: ImportModalProps) {
             {previewTasks.length > 0 ? (
               <div className="space-y-2">
                 <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
-                  Prévisualisation validée ({previewTasks.length} lignes)
+                  Prévisualisation validée ({previewTasks.length} tâches prêtes à être créées)
                 </span>
                 <div className="max-h-44 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-xl divide-y divide-slate-100 dark:divide-slate-800 text-xs">
                   {previewTasks.map((t, idx) => (
@@ -251,7 +205,7 @@ export function ImportModal({ isOpen, onClose }: ImportModalProps) {
             ) : (
               <button
                 type="button"
-                onClick={parseCsv}
+                onClick={handleGeneratePreview}
                 className="w-full py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl transition"
               >
                 Générer la prévisualisation des lignes
@@ -269,7 +223,7 @@ export function ImportModal({ isOpen, onClose }: ImportModalProps) {
               <button
                 type="button"
                 onClick={handleExecuteImport}
-                disabled={previewTasks.length === 0 && !csvText.trim()}
+                disabled={previewTasks.length === 0 && !rawText.trim()}
                 className="px-5 py-2 text-xs font-bold text-white bg-[#0066FF] hover:bg-blue-600 rounded-xl shadow-md transition disabled:opacity-50"
               >
                 Confirmer l’importation

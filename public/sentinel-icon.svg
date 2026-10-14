@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0066FF"/>
+      <stop offset="100%" stop-color="#00D2FF"/>
+    </linearGradient>
+    <linearGradient id="redGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF1E27"/>
+      <stop offset="100%" stop-color="#E0131C"/>
+    </linearGradient>
+  </defs>
+  <!-- Fond arrondi aux coins doux -->
+  <rect width="512" height="512" rx="128" fill="#0B132B"/>
+  <!-- Anneau externe dynamique -->
+  <circle cx="256" cy="256" r="210" fill="none" stroke="url(#bgGrad)" stroke-width="20" stroke-dasharray="800 200"/>
+  <!-- Bouclier central stylisé -->
+  <path d="M256 90 L390 150 V270 C390 350 330 410 256 440 C182 410 122 350 122 270 V150 Z" fill="url(#bgGrad)" opacity="0.95"/>
+  <!-- Accent de sécurité rouge Sentinelle -->
+  <path d="M256 120 L360 170 V260 C360 330 310 380 256 405 Z" fill="url(#redGrad)" opacity="0.85"/>
+  <!-- Lettres SG épurées au centre -->
+  <text x="256" y="280" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="110" font-weight="900" fill="#FFFFFF" text-anchor="middle" dominant-baseline="middle" letter-spacing="4">
+    SG
+  </text>
+</svg>

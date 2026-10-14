@@ -10,6 +10,7 @@ import { useSentinel } from '@/lib/store';
 import { Task, TaskStatus } from '@/types/sentinel';
 import { formatDayMonthFrench, formatRelativeTimeFrench, isDateOverdue } from '@/lib/dateUtils';
 import confetti from 'canvas-confetti';
+import { OnboardingBanner } from '@/components/onboarding/OnboardingBanner';
 
 interface OverviewDashboardProps {
   onOpenTaskModal: (task?: Task, defaultStatus?: TaskStatus) => void;
@@ -52,6 +53,8 @@ export function OverviewDashboard({ onOpenTaskModal }: OverviewDashboardProps) {
 
   return (
     <div className="space-y-7">
+      <OnboardingBanner />
+
       {/* 7.1 En-tête personnalisé et contextuel */}
       <div className="p-6 rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>

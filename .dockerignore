@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+.github
+.agents
+e2e
+tests
+test-results
+playwright-report
+*.md
+*.log
+.DS_Store
+Thumbs.db

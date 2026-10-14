@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {

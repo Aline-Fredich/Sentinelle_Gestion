@@ -21,6 +21,7 @@ import { getTodayDateString, isDateOverdue, isDateToday, isDateUpcoming } from '
 import { generateId } from '@/lib/idUtils';
 import { wouldCreateDependencyCycle } from '@/domain/dependencies';
 import { initializeAndMigrateDatabase, db } from '@/lib/repository';
+import { createLocalAvatarSvg } from '@/lib/avatarUtils';
 
 export interface FilterState {
   memberId?: string;
@@ -885,7 +886,7 @@ export function SentinelProvider({ children }: { children: React.ReactNode }) {
       name: inv.email.split('@')[0].replace('.', ' '),
       email: inv.email,
       role: inv.role,
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&auto=format&fit=crop&q=80',
+      avatar: createLocalAvatarSvg(inv.email.split('@')[0], '#0066FF', '#00D2FF'),
       jobTitle: inv.role === 'admin' ? 'Administrateur' : inv.role === 'project_manager' ? 'Chef de projet' : 'Membre collaborateur',
       weeklyCapacityMinutes: 2100,
       hourlyRate: workspace.defaultHourlyRate || 75,

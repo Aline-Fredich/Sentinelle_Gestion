@@ -1,0 +1,24 @@
+{
+  "name": "SENTINEL GESTION",
+  "short_name": "Sentinel",
+  "description": "Plateforme intégrée de pilotage et gouvernance de projet toute forme de projet",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B132B",
+  "theme_color": "#0066FF",
+  "orientation": "any",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/sentinel-icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/sentinel-logo.jpg",
+      "sizes": "192x192 512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}

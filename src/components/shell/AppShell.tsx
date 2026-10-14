@@ -26,6 +26,8 @@ import { IconPickerModal } from '@/components/icons/IconPickerModal';
 import { ShareModal } from '@/components/dialogs/ShareModal';
 import { ExportModal } from '@/components/dialogs/ExportModal';
 import { ImportModal } from '@/components/dialogs/ImportModal';
+import { SecurityGdprModal } from '@/components/settings/SecurityGdprModal';
+import { ExecutiveReportModal } from '@/components/reports/ExecutiveReportModal';
 import { Task, TaskStatus } from '@/types/sentinel';
 
 interface AppShellProps {
@@ -47,6 +49,8 @@ export function AppShell({ children }: AppShellProps) {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   const handleOpenNewTaskModal = (task?: Task, defaultStatus?: TaskStatus) => {
     if (task) {
@@ -88,6 +92,8 @@ export function AppShell({ children }: AppShellProps) {
           onOpenShareModal={() => setIsShareModalOpen(true)}
           onOpenExportModal={() => setIsExportModalOpen(true)}
           onOpenImportModal={() => setIsImportModalOpen(true)}
+          onOpenSecurityModal={() => setIsSecurityModalOpen(true)}
+          onOpenReportModal={() => setIsReportModalOpen(true)}
         />
 
         {/* Corps de la page */}
@@ -169,6 +175,16 @@ export function AppShell({ children }: AppShellProps) {
       <ImportModal
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
+      />
+
+      <SecurityGdprModal
+        isOpen={isSecurityModalOpen}
+        onClose={() => setIsSecurityModalOpen(false)}
+      />
+
+      <ExecutiveReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
       />
     </div>
   );
