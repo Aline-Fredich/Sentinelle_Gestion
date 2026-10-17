@@ -17,6 +17,7 @@ interface TopbarProps {
   onOpenImportModal?: () => void;
   onOpenSecurityModal?: () => void;
   onOpenReportModal?: () => void;
+  onOpenAuthModal?: () => void;
 }
 
 export function Topbar({
@@ -26,12 +27,14 @@ export function Topbar({
   onOpenImportModal,
   onOpenSecurityModal,
   onOpenReportModal,
+  onOpenAuthModal,
 }: TopbarProps) {
   const { 
     activeView, currentProject, activeProjectId, 
     searchQuery, setSearchQuery, filters, setFilters, 
     resetFilters, users, notifications, markNotificationAsRead, 
-    markAllNotificationsAsRead, activeTimer, startTimer, stopTimer
+    markAllNotificationsAsRead, activeTimer, startTimer, stopTimer,
+    currentUser
   } = useSentinel();
 
   const [showFilterPopover, setShowFilterPopover] = useState(false);
@@ -171,6 +174,10 @@ export function Topbar({
       title: 'Paramètres & Configuration',
       subtitle: 'Options globales de l’espace de travail et intégrations',
     },
+    super_admin: {
+      title: 'Super Administrateur • Superviseur Global',
+      subtitle: 'Indicateurs de performance holistiques, supervision de tous les projets et contrôle des formules',
+    },
   };
 
   const currentMeta = titles[activeView] || { 
@@ -189,17 +196,17 @@ export function Topbar({
   const unreadNotifs = notifications.filter(n => !n.read);
 
   return (
-    <header className="h-20 px-6 border-b border-[#E2E8F0] dark:border-slate-800 bg-white dark:bg-[#0B132B] flex items-center justify-between gap-4 z-20">
+    <header className="h-20 px-6 border-b border-black/8 dark:border-white/10 bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-xl flex items-center justify-between gap-4 z-20">
       {/* Titre & Fil d'ariane */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-0.5">
-          <span className="font-bold text-[#0066FF] tracking-wide uppercase">SENTINEL GESTION</span>
+          <span className="font-bold text-[#0071E3] dark:text-[#2997FF] tracking-wide uppercase">SENTINEL GESTION</span>
           <span>/</span>
           <span className="font-semibold text-slate-700 dark:text-slate-300">
             {activeProjectId === 'all' ? 'Tous les projets' : (currentProject?.name || 'Projet')}
           </span>
         </div>
-        <h1 className="text-lg font-bold text-[#0F172A] dark:text-white truncate">
+        <h1 className="text-lg font-bold text-slate-900 dark:text-white truncate">
           {currentMeta.title}
         </h1>
       </div>
@@ -397,6 +404,7 @@ export function Topbar({
 
         {/* Action principale : + Nouvelle tâche */}
         <button
+          data-testid="btn-new-task"
           onClick={onOpenNewTaskModal}
           className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-[#0066FF] hover:bg-blue-600 active:bg-blue-700 rounded-xl shadow-md shadow-blue-500/20 transition"
         >
@@ -418,6 +426,7 @@ export function Topbar({
         {/* Bouton Synthèse Exécutive CoDir */}
         {onOpenReportModal && (
           <button
+            data-testid="btn-report-modal"
             onClick={onOpenReportModal}
             className="p-2 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition"
             title="Synthèse Exécutive pour CoDir / Copil (Rapport PDF)"
@@ -429,6 +438,7 @@ export function Topbar({
         {/* Bouton Exporter */}
         {onOpenExportModal && (
           <button
+            data-testid="btn-export-modal"
             onClick={onOpenExportModal}
             className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition"
             title="Exporter les données (JSON / CSV)"
@@ -517,6 +527,7 @@ export function Topbar({
         {/* Bouton Sécurité & Conformité RGPD */}
         {onOpenSecurityModal && (
           <button
+            data-testid="btn-security-modal"
             onClick={onOpenSecurityModal}
             className="p-2 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition"
             title="Sécurité, Journal d'Audit & Conformité RGPD"
@@ -527,12 +538,45 @@ export function Topbar({
 
         {/* Toggle Mode Clair / Sombre */}
         <button
+          data-testid="btn-theme-toggle"
           onClick={toggleDarkMode}
-          className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+          className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition"
           title={isDarkMode ? 'Passer en mode clair' : 'Passer en mode sombre'}
         >
           {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
         </button>
+
+        {/* Bouton Compte Apple & Sélecteur d'Espace (Admin / Super Admin) */}
+        {onOpenAuthModal && (
+          <button
+            onClick={onOpenAuthModal}
+            className="flex items-center gap-2.5 py-1 px-2.5 rounded-full bg-[#F5F5F7] dark:bg-[#2C2C2E] border border-black/5 dark:border-white/10 hover:border-black/15 dark:hover:border-white/20 transition active:scale-95 shadow-sm"
+            title="Changer de compte ou configurer un administrateur"
+          >
+            <img
+              src={currentUser.avatar}
+              alt={currentUser.name}
+              className="w-7 h-7 rounded-full shadow-sm"
+            />
+            <div className="text-left hidden md:block">
+              <div className="text-xs font-bold text-slate-900 dark:text-white leading-tight flex items-center gap-1.5">
+                <span>{currentUser.name}</span>
+                {currentUser.role === 'super_admin' ? (
+                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 font-extrabold uppercase">
+                    Super Admin
+                  </span>
+                ) : (
+                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-[#0071E3]/10 text-[#0071E3] dark:text-[#2997FF] font-extrabold uppercase">
+                    Admin
+                  </span>
+                )}
+              </div>
+              <div className="text-[10px] text-slate-400 leading-tight">
+                {currentUser.jobTitle}
+              </div>
+            </div>
+          </button>
+        )}
       </div>
     </header>
   );

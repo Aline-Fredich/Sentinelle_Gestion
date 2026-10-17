@@ -200,6 +200,7 @@ export function TaskModal({
             </label>
             <input
               type="text"
+              data-testid="input-task-title"
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -439,6 +440,7 @@ export function TaskModal({
             {taskToEdit && (
               <button
                 type="button"
+                data-testid="btn-task-delete"
                 onClick={() => setShowDeleteConfirm(true)}
                 className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition"
               >
@@ -457,6 +459,7 @@ export function TaskModal({
             </button>
             <button
               type="button"
+              data-testid="btn-task-submit"
               onClick={handleSubmit}
               className="px-5 py-2 text-xs font-semibold text-white bg-[#0066FF] hover:bg-blue-700 rounded-xl shadow-md transition"
             >

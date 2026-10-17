@@ -462,6 +462,7 @@ export function FinanceView() {
             <div className="space-y-4">
               <input
                 type="number"
+                data-testid="input-target-budget"
                 value={targetBudgetInput}
                 onChange={(e) => setTargetBudgetInput(e.target.value)}
                 className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
@@ -474,6 +475,7 @@ export function FinanceView() {
                   Annuler
                 </button>
                 <button
+                  data-testid="btn-validate-budget"
                   onClick={() => {
                     const parsed = parseFloat(targetBudgetInput);
                     if (!isNaN(parsed) && parsed > 0) {

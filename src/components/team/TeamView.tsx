@@ -26,6 +26,7 @@ export function TeamView({ onOpenTaskModal }: TeamViewProps) {
   const [memberToRemove, setMemberToRemove] = useState<User | null>(null);
 
   const roleLabels: Record<WorkspaceRole, string> = {
+    super_admin: 'Super Administrateur',
     owner: 'Propriétaire',
     admin: 'Administrateur',
     project_manager: 'Chef de projet',
@@ -79,6 +80,7 @@ export function TeamView({ onOpenTaskModal }: TeamViewProps) {
         </button>
 
         <button
+          data-testid="tab-team-roles"
           onClick={() => setActiveTab('members')}
           className={`px-3.5 py-1.5 rounded-xl transition ${
             activeTab === 'members'

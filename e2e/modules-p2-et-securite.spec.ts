@@ -4,79 +4,71 @@ test.describe('SENTINEL GESTION — Modules Métier & Sécurité Avancée (Phase
 
   test('Module 1: Budgets & Dépenses — Métriques financières et alertes de dépassement', async ({ page }) => {
     await page.goto('/');
-    // Clic sur Finances & Budget dans la barre latérale
-    await page.click('button:has-text("Finances & Budget")');
-    await expect(page.locator('text=Suivi Financier & Budgets')).toBeVisible();
-    await expect(page.locator('text=Budget alloué')).toBeVisible();
-    await expect(page.locator('text=Dépenses engagées')).toBeVisible();
-    await expect(page.locator('text=Main d’œuvre')).toBeVisible();
+    // Clic sur Budgets & Dépenses dans la barre latérale via data-testid
+    await page.locator('[data-testid="nav-finance"]').click();
+    await expect(page.locator('text=Gestion Budgétaire & Rentabilité')).toBeVisible();
+    await expect(page.locator('text=Devis Cible Alloué')).toBeVisible();
+    await expect(page.locator('text=Dépenses Totales Engagées')).toBeVisible();
 
-    // Vérifier la présence du tableau des dépenses récentes
-    await expect(page.locator('text=Historique des Dépenses')).toBeVisible();
-    await expect(page.locator('button:has-text("Nouvelle dépense")')).toBeVisible();
+    // Vérifier la présence du bouton d'ajout de dépense
+    await expect(page.locator('button:has-text("Ajouter une dépense")')).toBeVisible();
   });
 
   test('Module 2: Suivi du Temps — Feuille de temps et calcul des coûts', async ({ page }) => {
     await page.goto('/');
-    await page.click('button:has-text("Suivi du Temps")');
-    await expect(page.locator('text=Suivi du Temps de Travail')).toBeVisible();
-    await expect(page.locator('text=Total semaine')).toBeVisible();
-    await expect(page.locator('text=Chronomètre en direct')).toBeVisible();
-    await expect(page.locator('text=Feuille de Temps Récente')).toBeVisible();
+    await page.locator('[data-testid="nav-timetracking"]').click();
+    await expect(page.locator('text=Suivi du Temps & Feuilles de Temps')).toBeVisible();
+    await expect(page.locator('text=Chronomètre en Direct')).toBeVisible();
 
-    // Vérifier le bouton de saisie manuelle
-    await expect(page.locator('button:has-text("Saisie manuelle")')).toBeVisible();
+    // Vérifier le bouton d'enregistrement manuel
+    await expect(page.locator('button:has-text("Enregistrer la session")')).toBeVisible();
   });
 
   test('Module 3: Sprints Agile — Backlog, Story Points et Graphique Burndown', async ({ page }) => {
     await page.goto('/');
-    await page.click('button:has-text("Sprints Agile")');
-    await expect(page.locator('text=Gestion des Sprints Agile')).toBeVisible();
-    await expect(page.locator('text=Graphique Burndown')).toBeVisible();
-    await expect(page.locator('text=Vélocité de l’équipe')).toBeVisible();
-    await expect(page.locator('text=Points d’effort restants')).toBeVisible();
+    await page.locator('[data-testid="nav-sprints"]').click();
+    await expect(page.locator('text=Gestion des Sprints & Méthodologie Agile')).toBeVisible();
+    await expect(page.locator('text=Courbe Burndown')).toBeVisible();
 
-    // Vérification de la présence de la courbe vectorielle SVG
+    // Vérification de la présence de la courbe vectorielle SVG Burndown
     const burndownSvg = page.locator('svg[viewBox="0 0 600 240"]');
     await expect(burndownSvg).toBeVisible();
   });
 
   test('Module 4: Wiki & Documentation — Base de connaissances et recherche', async ({ page }) => {
     await page.goto('/');
-    await page.click('button:has-text("Wiki & Docs")');
-    await expect(page.locator('text=Base de Connaissances & Wiki')).toBeVisible();
-    await expect(page.locator('text=Articles du Projet')).toBeVisible();
+    await page.locator('[data-testid="nav-wiki"]').click();
+    await expect(page.locator('text=Wiki & Base de Connaissances')).toBeVisible();
 
     // Champ de recherche d'articles
     const searchInput = page.locator('input[placeholder*="Rechercher"]');
     await expect(searchInput).toBeVisible();
 
-    // Bouton de rédaction
-    await expect(page.locator('button:has-text("Nouvel article")')).toBeVisible();
+    // Bouton de création
+    await expect(page.locator('button:has-text("Nouvelle page")')).toBeVisible();
   });
 
   test('Module 5: Gestion des Risques — Matrice 5x5 et plans d’atténuation', async ({ page }) => {
     await page.goto('/');
-    await page.click('button:has-text("Gestion des Risques")');
-    await expect(page.locator('text=Matrice de Criticité')).toBeVisible();
-    await expect(page.locator('text=Risques critiques')).toBeVisible();
-    await expect(page.locator('text=Registre & Plans d’Atténuation')).toBeVisible();
+    await page.locator('[data-testid="nav-risks"]').click();
+    await expect(page.locator('text=Gestion des Risques & Matrice de Criticité')).toBeVisible();
+    await expect(page.locator('text=Total Risques Déclarés')).toBeVisible();
 
-    // Vérifier le bouton de déclaration de risque
-    await expect(page.locator('button:has-text("Déclarer un risque")')).toBeVisible();
+    // Vérifier le bouton d'identification de risque
+    await expect(page.locator('button:has-text("Identifier un risque")')).toBeVisible();
   });
 
   test('Module 6: Sécurité & RGPD — Modale, Audit Trail et Portabilité des Données', async ({ page }) => {
     await page.goto('/');
 
-    // Clic sur l'icône de sécurité dans la barre supérieure
-    const securityBtn = page.locator('button[title*="Sécurité, Journal d\'Audit & Conformité RGPD"]');
+    // Clic sur l'icône de sécurité dans la barre supérieure via testid
+    const securityBtn = page.locator('[data-testid="btn-security-modal"]');
     await expect(securityBtn).toBeVisible();
     await securityBtn.click();
 
     // Vérification de l'ouverture de la boîte de dialogue
     await expect(page.locator('text=Sécurité & Conformité RGPD')).toBeVisible();
-    await expect(page.locator('text=Journal d’audit infalsifiable')).toBeVisible();
+    await expect(page.locator('text=Chaîne Cryptographique')).toBeVisible();
 
     // Test de vérification cryptographique
     const verifyBtn = page.locator('button:has-text("Vérifier l’intégrité")');

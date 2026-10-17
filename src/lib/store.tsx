@@ -143,6 +143,9 @@ interface SentinelContextType {
   
   createProject: (data: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'workspaceId'>) => { success: boolean; project?: Project; error?: string };
   updateProject: (id: string, updates: Partial<Project>) => void;
+  updateProjectTier: (projectId: string, tier: 'standard' | 'pro' | 'premium') => void;
+  registerUser: (userData: { name: string; email: string; role: WorkspaceRole; jobTitle?: string; projectName?: string }) => User;
+  switchCurrentUser: (user: User) => void;
   
   createPhase: (data: Omit<ProjectPhase, 'id'>) => ProjectPhase;
   updatePhase: (id: string, updates: Partial<ProjectPhase>) => void;
@@ -879,6 +882,97 @@ export function SentinelProvider({ children }: { children: React.ReactNode }) {
     logActivity('project_updated', `a mis à jour les paramètres du projet`, undefined, id);
   }, [logActivity]);
 
+  const updateProjectTier = useCallback((projectId: string, tier: 'standard' | 'pro' | 'premium') => {
+    setProjects(prev => prev.map(p => {
+      if (p.id !== projectId) return p;
+      return {
+        ...p,
+        tier,
+        updatedAt: new Date().toISOString()
+      };
+    }));
+    logActivity('project_updated', `a passé la formule du projet au niveau « ${tier.toUpperCase()} »`, undefined, projectId);
+    addNotification('Niveau de Formule Mis à Jour', `Le Super Administrateur a attribué le niveau ${tier.toUpperCase()} au projet.`, 'project');
+  }, [logActivity, addNotification]);
+
+  const switchCurrentUser = useCallback((user: User) => {
+    setCurrentUser(user);
+    try {
+      localStorage.setItem('sentinel_current_user_id', user.id);
+    } catch {}
+
+    if (user.role === 'super_admin' || user.isSuperAdmin) {
+      setActiveView('super_admin');
+    } else {
+      const userPrj = projects.find(p => p.leadUserId === user.id || p.memberIds.includes(user.id)) || projects[0];
+      if (userPrj) {
+        setActiveProjectId(userPrj.id);
+      }
+      setActiveView('overview');
+    }
+    addNotification('Session active', `Connecté en tant que ${user.name} (${user.role === 'super_admin' ? 'Super Administrateur' : 'Administrateur'}).`, 'system');
+  }, [projects, addNotification]);
+
+  const registerUser = useCallback((userData: { name: string; email: string; role: WorkspaceRole; jobTitle?: string; projectName?: string }) => {
+    const newUser: User = {
+      id: generateId('u'),
+      name: userData.name,
+      email: userData.email,
+      role: userData.role,
+      avatar: createLocalAvatarSvg(userData.name),
+      jobTitle: userData.jobTitle || (userData.role === 'super_admin' ? 'Super Administrateur' : 'Administrateur Projet'),
+      weeklyCapacityMinutes: 2100,
+      hourlyRate: 75,
+      isSuperAdmin: userData.role === 'super_admin',
+    };
+
+    let assignedPrjId: string | undefined;
+
+    if (userData.projectName) {
+      const prjId = generateId('prj');
+      const newPrj: Project = {
+        id: prjId,
+        workspaceId: workspace.id,
+        name: userData.projectName,
+        reference: `PRJ-${Math.floor(100 + Math.random() * 900)}`,
+        description: `Espace de travail et projet dédié de ${userData.name}`,
+        status: 'active',
+        priority: 'high',
+        iconKey: 'layers',
+        colorKey: 'blue',
+        startDate: new Date().toISOString().split('T')[0],
+        dueDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        leadUserId: newUser.id,
+        memberIds: [newUser.id],
+        tier: 'standard',
+        allocatedHours: 150,
+        budget: 30000,
+        tags: ['Démarrage', 'Actif'],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setProjects(prev => [newPrj, ...prev]);
+      assignedPrjId = prjId;
+      newUser.assignedProjectId = prjId;
+    }
+
+    setUsers(prev => [...prev, newUser]);
+    setCurrentUser(newUser);
+    try {
+      localStorage.setItem('sentinel_current_user_id', newUser.id);
+    } catch {}
+
+    if (assignedPrjId) {
+      setActiveProjectId(assignedPrjId);
+      setActiveView('overview');
+    } else if (userData.role === 'super_admin') {
+      setActiveView('super_admin');
+    }
+
+    addNotification('Compte créé', `Bienvenue sur SENTINEL GESTION, ${userData.name}.`, 'system');
+    return newUser;
+  }, [workspace.id, addNotification]);
+
   // Actions Membres & Invitations
   const createInvitation = useCallback((email: string, role: WorkspaceRole, projectId?: string): { success: boolean; error?: string } => {
     if (!email || !email.includes('@')) {
@@ -1455,6 +1549,9 @@ export function SentinelProvider({ children }: { children: React.ReactNode }) {
 
       createProject,
       updateProject,
+      updateProjectTier,
+      registerUser,
+      switchCurrentUser,
       createPhase,
       updatePhase,
       deletePhase,

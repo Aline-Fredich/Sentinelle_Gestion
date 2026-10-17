@@ -35,5 +35,6 @@ export const LOCAL_AVATARS = {
   marc: createLocalAvatarSvg('Marc Benali', '#0284C7', '#38BDF8'),     // MB (Ciel/Bleu)
   sophie: createLocalAvatarSvg('Sophie Martin', '#7C3AED', '#A855F7'), // SM (Violet)
   julien: createLocalAvatarSvg('Julien Moreau', '#D97706', '#F59E0B'), // JM (Ambre)
+  superadmin: createLocalAvatarSvg('Marc De Villiers', '#1C1C1E', '#48484A'), // MV (Graphite Apple)
   system: createLocalAvatarSvg('SENTINEL', '#FF1E27', '#EF4444'),     // SG (Rouge Sentinelle)
 };

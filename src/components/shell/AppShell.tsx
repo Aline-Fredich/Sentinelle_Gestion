@@ -20,6 +20,7 @@ import { TimeTrackingView } from '@/components/timetracking/TimeTrackingView';
 import { SprintsView } from '@/components/sprints/SprintsView';
 import { WikiView } from '@/components/wiki/WikiView';
 import { RisksView } from '@/components/risks/RisksView';
+import { SuperAdminDashboard } from '@/components/superadmin/SuperAdminDashboard';
 
 import { TaskModal } from '@/components/dialogs/TaskModal';
 import { IconPickerModal } from '@/components/icons/IconPickerModal';
@@ -28,6 +29,8 @@ import { ExportModal } from '@/components/dialogs/ExportModal';
 import { ImportModal } from '@/components/dialogs/ImportModal';
 import { SecurityGdprModal } from '@/components/settings/SecurityGdprModal';
 import { ExecutiveReportModal } from '@/components/reports/ExecutiveReportModal';
+import { CreateProjectModal } from '@/components/dialogs/CreateProjectModal';
+import { AuthModal } from '@/components/auth/AuthModal';
 import { Task, TaskStatus } from '@/types/sentinel';
 
 interface AppShellProps {
@@ -51,6 +54,8 @@ export function AppShell({ children }: AppShellProps) {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const handleOpenNewTaskModal = (task?: Task, defaultStatus?: TaskStatus) => {
     if (task) {
@@ -77,16 +82,17 @@ export function AppShell({ children }: AppShellProps) {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 font-sans antialiased text-slate-900 dark:text-slate-100">
-      {/* Barre latérale */}
+    <div className="flex h-screen overflow-hidden bg-[#F5F5F7] dark:bg-[#000000] font-sans antialiased text-slate-900 dark:text-[#F5F5F7]">
+      {/* Barre latérale Apple */}
       <Sidebar
         isCollapsed={isSidebarCollapsed}
         setIsCollapsed={setIsSidebarCollapsed}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
       />
 
       {/* Contenu principal */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Barre supérieure */}
+        {/* Barre supérieure Apple */}
         <Topbar
           onOpenNewTaskModal={() => handleOpenNewTaskModal()}
           onOpenShareModal={() => setIsShareModalOpen(true)}
@@ -94,6 +100,7 @@ export function AppShell({ children }: AppShellProps) {
           onOpenImportModal={() => setIsImportModalOpen(true)}
           onOpenSecurityModal={() => setIsSecurityModalOpen(true)}
           onOpenReportModal={() => setIsReportModalOpen(true)}
+          onOpenAuthModal={() => setIsAuthModalOpen(true)}
         />
 
         {/* Corps de la page */}
@@ -104,7 +111,10 @@ export function AppShell({ children }: AppShellProps) {
             ) : (
               <>
                 {activeView === 'overview' && (
-                  <OverviewDashboard onOpenTaskModal={handleOpenNewTaskModal} />
+                  <OverviewDashboard 
+                    onOpenTaskModal={handleOpenNewTaskModal} 
+                    onOpenCreateProjectModal={() => setIsCreateProjectOpen(true)}
+                  />
                 )}
                 {activeView === 'project_sheet' && (
                   <ProjectSheet
@@ -142,6 +152,7 @@ export function AppShell({ children }: AppShellProps) {
                 )}
                 {activeView === 'billing' && <BillingView />}
                 {activeView === 'settings' && <SettingsView />}
+                {activeView === 'super_admin' && <SuperAdminDashboard />}
               </>
             )}
           </div>
@@ -185,6 +196,16 @@ export function AppShell({ children }: AppShellProps) {
       <ExecutiveReportModal
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
+      />
+
+      <CreateProjectModal
+        isOpen={isCreateProjectOpen}
+        onClose={() => setIsCreateProjectOpen(false)}
+      />
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
       />
     </div>
   );

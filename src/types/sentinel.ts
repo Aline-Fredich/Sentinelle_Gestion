@@ -4,7 +4,7 @@
  * Conforme au cahier des charges et architecture SENTINEL GESTION.
  */
 
-export type WorkspaceRole = 'owner' | 'admin' | 'project_manager' | 'member' | 'viewer';
+export type WorkspaceRole = 'super_admin' | 'owner' | 'admin' | 'project_manager' | 'member' | 'viewer';
 
 export interface User {
   id: string;
@@ -15,10 +15,15 @@ export interface User {
   jobTitle: string;
   weeklyCapacityMinutes: number; // ex: 35h = 2100 minutes
   hourlyRate?: number; // Taux horaire individuel (ex: 75 €/h)
+  assignedProjectId?: string;
+  isSuperAdmin?: boolean;
+  password?: string;
 }
 
+export type ProjectTier = 'standard' | 'pro' | 'premium';
 export type ProjectStatus = 'draft' | 'active' | 'on_hold' | 'completed' | 'archived';
 export type TaskPriority = 'urgent' | 'high' | 'medium' | 'low';
+export type ProjectPriority = TaskPriority;
 export type TaskStatus = 'todo' | 'in_progress' | 'in_review' | 'done';
 
 export interface ProjectPhase {
@@ -132,6 +137,9 @@ export interface Project {
   memberIds: string[];
   githubRepoUrl?: string;
   tags: string[];
+  tier?: ProjectTier;
+  allocatedHours?: number;
+  budget?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -202,7 +210,8 @@ export type ActiveView =
   | 'forum'
   | 'team' 
   | 'billing'
-  | 'settings';
+  | 'settings'
+  | 'super_admin';
 
 export interface WorkspaceInvitation {
   id: string;

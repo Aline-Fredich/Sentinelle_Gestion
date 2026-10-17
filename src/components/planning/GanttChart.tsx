@@ -159,6 +159,7 @@ export function GanttChart({ onOpenTaskModal, onOpenIconPicker }: GanttChartProp
 
           {/* Dépendance */}
           <button
+            data-testid="btn-add-dep-modal"
             onClick={() => setShowAddDepModal(true)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition"
           >
@@ -404,7 +405,10 @@ export function GanttChart({ onOpenTaskModal, onOpenIconPicker }: GanttChartProp
             </div>
 
             {depError && (
-              <div className="p-3 text-xs bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 rounded-xl">
+              <div 
+                data-testid="dep-error-message"
+                className="p-3 text-xs bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 rounded-xl"
+              >
                 {depError}
               </div>
             )}
@@ -415,6 +419,7 @@ export function GanttChart({ onOpenTaskModal, onOpenIconPicker }: GanttChartProp
                   Tâche précédente (Prédécesseur)
                 </label>
                 <select
+                  data-testid="select-pred-task"
                   value={predTaskId}
                   onChange={(e) => setPredTaskId(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
@@ -433,6 +438,7 @@ export function GanttChart({ onOpenTaskModal, onOpenIconPicker }: GanttChartProp
                   Tâche suivante (Successeur)
                 </label>
                 <select
+                  data-testid="select-succ-task"
                   value={succTaskId}
                   onChange={(e) => setSuccTaskId(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
@@ -456,6 +462,7 @@ export function GanttChart({ onOpenTaskModal, onOpenIconPicker }: GanttChartProp
                 </button>
                 <button
                   type="submit"
+                  data-testid="btn-submit-dep"
                   className="px-4 py-1.5 font-semibold text-white bg-[#0066FF] hover:bg-blue-700 rounded-xl shadow-md"
                 >
                   Valider la liaison

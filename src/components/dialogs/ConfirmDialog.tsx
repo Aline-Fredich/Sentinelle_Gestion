@@ -100,6 +100,7 @@ export function ConfirmDialog({
           <button
             ref={cancelBtnRef}
             type="button"
+            data-testid="btn-confirm-cancel"
             onClick={onCancel}
             className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition"
           >
@@ -107,6 +108,7 @@ export function ConfirmDialog({
           </button>
           <button
             type="button"
+            data-testid="btn-confirm-accept"
             onClick={onConfirm}
             className={`px-4 py-2 text-xs font-bold rounded-xl shadow-md transition ${confirmColors}`}
           >

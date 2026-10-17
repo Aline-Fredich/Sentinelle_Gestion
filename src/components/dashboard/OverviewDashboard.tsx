@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { 
   CheckCircle2, Clock, AlertTriangle, ArrowUpRight, 
   Calendar, CheckSquare, Users, BarChart3, Plus, 
-  TrendingUp, Shield, Layers, Eye, ChevronRight, Activity, Filter
+  TrendingUp, Shield, Layers, Eye, ChevronRight, Activity, Filter, FolderPlus
 } from 'lucide-react';
 import { useSentinel } from '@/lib/store';
 import { Task, TaskStatus } from '@/types/sentinel';
@@ -14,9 +14,10 @@ import { OnboardingBanner } from '@/components/onboarding/OnboardingBanner';
 
 interface OverviewDashboardProps {
   onOpenTaskModal: (task?: Task, defaultStatus?: TaskStatus) => void;
+  onOpenCreateProjectModal?: () => void;
 }
 
-export function OverviewDashboard({ onOpenTaskModal }: OverviewDashboardProps) {
+export function OverviewDashboard({ onOpenTaskModal, onOpenCreateProjectModal }: OverviewDashboardProps) {
   const { 
     metrics, filteredTasks, moveTaskStatus, 
     workload, priorityDistribution, activities, users, projects,
@@ -55,14 +56,14 @@ export function OverviewDashboard({ onOpenTaskModal }: OverviewDashboardProps) {
     <div className="space-y-7">
       <OnboardingBanner />
 
-      {/* 7.1 En-tête personnalisé et contextuel */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      {/* 7.1 En-tête personnalisé et contextuel Apple */}
+      <div className="p-7 rounded-3xl apple-card shadow-[0_4px_24px_rgba(0,0,0,0.04)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-bold text-[#0066FF] dark:text-blue-400 mb-1 uppercase tracking-wider">
-            <span className="w-2 h-2 rounded-full bg-[#0066FF] animate-pulse" />
+          <div className="flex items-center gap-2 text-xs font-bold text-[#0071E3] dark:text-[#2997FF] mb-1 uppercase tracking-wider">
+            <span className="w-2 h-2 rounded-full bg-[#0071E3] animate-pulse" />
             Tableau de bord de pilotage • SENTINEL GESTION
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
             Bonjour, {firstName} 👋
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -70,11 +71,11 @@ export function OverviewDashboard({ onOpenTaskModal }: OverviewDashboardProps) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
           <select
             value={activeProjectId}
             onChange={(e) => setActiveProjectId(e.target.value)}
-            className="text-xs px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0066FF]"
+            className="apple-input text-xs font-semibold"
           >
             <option value="all">Périmètre : Tous les projets</option>
             {projects.map(p => (
@@ -84,11 +85,23 @@ export function OverviewDashboard({ onOpenTaskModal }: OverviewDashboardProps) {
             ))}
           </select>
 
+          {onOpenCreateProjectModal && (
+            <button
+              type="button"
+              data-testid="btn-new-project"
+              onClick={onOpenCreateProjectModal}
+              className="apple-btn-secondary text-xs"
+            >
+              <FolderPlus className="w-3.5 h-3.5 text-[#0071E3]" />
+              <span>Nouveau projet</span>
+            </button>
+          )}
+
           <button
             onClick={() => onOpenTaskModal(undefined, 'todo')}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#0066FF] hover:bg-blue-600 active:bg-blue-700 rounded-xl shadow-md shadow-blue-500/20 transition"
+            className="apple-btn-primary text-xs"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span>Nouvelle tâche</span>
           </button>
         </div>

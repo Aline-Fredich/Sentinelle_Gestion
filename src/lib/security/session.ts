@@ -20,6 +20,20 @@ export type SecurityPermission =
   | 'gdpr:anonymize';
 
 const ROLE_PERMISSIONS: Record<WorkspaceRole, readonly SecurityPermission[]> = {
+  super_admin: [
+    'workspace:manage',
+    'project:create',
+    'project:edit',
+    'project:delete',
+    'budget:view',
+    'budget:edit',
+    'task:create',
+    'task:edit',
+    'task:delete',
+    'audit:view',
+    'gdpr:export',
+    'gdpr:anonymize',
+  ],
   owner: [
     'workspace:manage',
     'project:create',
