@@ -28,6 +28,7 @@ import {
   formatWebhookPayload, 
   dispatchWebhookNotification 
 } from '@/lib/automations/ruleEngine';
+import { formatCurrency } from '@/lib/currencyUtils';
 
 export interface FilterState {
   memberId?: string;
@@ -1312,16 +1313,17 @@ export function SentinelProvider({ children }: { children: React.ReactNode }) {
       }
       return nextExpenses;
     });
-    logActivity('task_updated', `a ajouté une dépense de ${data.amount}€ (${data.title}).`);
+    const curr = workspace.currency || 'FCFA';
+    logActivity('task_updated', `a ajouté une dépense de ${formatCurrency(data.amount, curr)} (${data.title}).`);
     return newExp;
-  }, [budgets, logActivity, addNotification]);
+  }, [budgets, logActivity, addNotification, workspace.currency]);
 
   const deleteExpense = useCallback((id: string) => {
     setExpenses(prev => prev.filter(e => e.id !== id));
   }, []);
 
   const updateBudget = useCallback((projectId: string, targetBudget: number) => {
-    const curr = workspace.currency || '€';
+    const curr = workspace.currency || 'FCFA';
     setBudgets(prev => {
       const idx = prev.findIndex(b => b.projectId === projectId);
       if (idx >= 0) {

@@ -8,6 +8,7 @@ import {
 import { useSentinel } from '@/lib/store';
 import { ProjectExpense } from '@/types/sentinel';
 import { calculateProjectFinances } from '@/domain/finances';
+import { formatCurrency } from '@/lib/currencyUtils';
 
 export function FinanceView() {
   const { 
@@ -29,8 +30,8 @@ export function FinanceView() {
 
   const fallbackProjectId = projects[0]?.id || 'prj-1';
   const targetProjectId = activeProjectId === 'all' ? fallbackProjectId : activeProjectId;
-  const defaultRate = workspace.defaultHourlyRate || 75;
-  const currency = workspace.currency || '€';
+  const defaultRate = workspace.defaultHourlyRate || 15000;
+  const currency = workspace.currency || 'FCFA';
 
   const currentBudgetObj = useMemo(() => {
     return budgets.find(b => b.projectId === targetProjectId) || {
@@ -165,10 +166,10 @@ export function FinanceView() {
             </div>
             <div>
               <h4 className="text-sm font-bold text-red-700 dark:text-red-300">
-                Alerte Critique : Dépassement du Budget de {overrunAmount.toLocaleString('fr-FR')} € !
+                Alerte Critique : Dépassement du Budget de {formatCurrency(overrunAmount, currency)} !
               </h4>
               <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">
-                Le total des engagements ({totalSpent.toLocaleString('fr-FR')} €) excède l'enveloppe allouée ({projectBudget.toLocaleString('fr-FR')} €). Ajustez le devis cible ou limitez les dépenses non essentielles.
+                Le total des engagements ({formatCurrency(totalSpent, currency)}) excède l'enveloppe allouée ({formatCurrency(projectBudget, currency)}). Ajustez le devis cible ou limitez les dépenses non essentielles.
               </p>
             </div>
           </div>
@@ -190,7 +191,7 @@ export function FinanceView() {
                 Seuil de Vigilance : {consumptionPercentage}% du budget consommé
               </h4>
               <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
-                Il reste seulement {remainingBudget.toLocaleString('fr-FR')} € de marge avant d'atteindre le plafond prévisionnel.
+                Il reste seulement {formatCurrency(remainingBudget, currency)} de marge avant d'atteindre le plafond prévisionnel.
               </p>
             </div>
           </div>
@@ -202,7 +203,7 @@ export function FinanceView() {
         <div className="p-5 rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-sm">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Devis Cible Alloué</span>
           <div className="mt-2 text-2xl font-black text-slate-900 dark:text-white">
-            {projectBudget.toLocaleString('fr-FR')} €
+            {formatCurrency(projectBudget, currency)}
           </div>
           <span className="text-[11px] text-slate-400 mt-1 block">Enveloppe budgétaire prévisionnelle</span>
         </div>
@@ -210,7 +211,7 @@ export function FinanceView() {
         <div className="p-5 rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-sm">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Dépenses Totales Engagées</span>
           <div className={`mt-2 text-2xl font-black ${isOverBudget ? 'text-[#FF1E27]' : 'text-[#0066FF]'}`}>
-            {totalSpent.toLocaleString('fr-FR')} €
+            {formatCurrency(totalSpent, currency)}
           </div>
           <div className="mt-2 flex items-center gap-2">
             <div className="flex-1 bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
@@ -228,15 +229,15 @@ export function FinanceView() {
         <div className="p-5 rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-sm">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Coût Main d'Œuvre (Temps)</span>
           <div className="mt-2 text-2xl font-black text-blue-600 dark:text-blue-400">
-            {Math.round(totalLaborCost).toLocaleString('fr-FR')} {currency}
+            {formatCurrency(totalLaborCost, currency)}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">{totalLaborHours} h déclarées • Taux moyen {defaultRate} {currency}/h</span>
+          <span className="text-[11px] text-slate-400 mt-1 block">{totalLaborHours} h déclarées • Taux moyen {formatCurrency(defaultRate, currency)}/h</span>
         </div>
 
         <div className="p-5 rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-sm">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Solde Disponible</span>
           <div className={`mt-2 text-2xl font-black ${isOverBudget ? 'text-[#FF1E27]' : remainingBudget < 5000 ? 'text-amber-500' : 'text-emerald-600'}`}>
-            {isOverBudget ? `-${overrunAmount.toLocaleString('fr-FR')} €` : `${remainingBudget.toLocaleString('fr-FR')} €`}
+            {isOverBudget ? `-${formatCurrency(overrunAmount, currency)}` : formatCurrency(remainingBudget, currency)}
           </div>
           <span className="text-[11px] text-slate-400 mt-1 block">
             {isOverBudget ? 'Déficit budgétaire constaté' : 'Marge financière restante'}
@@ -338,7 +339,7 @@ export function FinanceView() {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right font-bold text-slate-900 dark:text-white">
-                        {exp.amount.toLocaleString('fr-FR')} €
+                        {formatCurrency(exp.amount, currency)}
                       </td>
                       <td className="py-3 px-4 text-center">
                         <button
@@ -382,7 +383,7 @@ export function FinanceView() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                  Montant en euros (€)
+                  Montant en Francs CFA ({currency})
                 </label>
                 <input
                   type="number"

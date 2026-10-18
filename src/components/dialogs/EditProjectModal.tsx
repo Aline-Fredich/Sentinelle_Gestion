@@ -242,9 +242,9 @@ export function EditProjectModal({ isOpen, onClose, project }: EditProjectModalP
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+              <label className="text-[13px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <DollarSign className="w-3.5 h-3.5 text-[#34C759]" />
-                Budget Financier Alloué (€)
+                Budget Financier Alloué (FCFA)
               </label>
               <input
                 type="number"

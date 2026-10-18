@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useSentinel } from '@/lib/store';
 import { getTodayDateString } from '@/lib/dateUtils';
+import { formatCurrency } from '@/lib/currencyUtils';
 
 // Jours de la semaine de référence
 const WEEK_DAYS = [
@@ -22,7 +23,7 @@ export function TimeTrackingView() {
   const { 
     activeProjectId, tasks, users,
     timeEntries, activeTimer, startTimer, stopTimer, addTimeEntry, deleteTimeEntry,
-    currentUser
+    currentUser, workspace
   } = useSentinel();
 
   const [selectedTaskId, setSelectedTaskId] = useState<string>('');
@@ -230,9 +231,9 @@ export function TimeTrackingView() {
         <div className="p-5 rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-sm">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Coût Main d'Œuvre Valorisé</span>
           <div className="mt-2 text-2xl font-black text-emerald-600">
-            {Math.round(totalValorizedCost).toLocaleString('fr-FR')} €
+            {formatCurrency(totalValorizedCost, workspace.currency || 'FCFA')}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">Taux moyen calculé à 75 € / heure</span>
+          <span className="text-[11px] text-slate-400 mt-1 block">Taux moyen calculé à {formatCurrency(workspace.defaultHourlyRate || 15000, workspace.currency || 'FCFA')} / heure</span>
         </div>
 
         <div className="p-5 rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -483,7 +484,7 @@ export function TimeTrackingView() {
                             {hours} h
                           </td>
                           <td className="py-3 px-4 text-right font-semibold text-slate-700 dark:text-slate-300">
-                            {cost} €
+                            {formatCurrency(cost, workspace.currency || 'FCFA')}
                           </td>
                           <td className="py-3 px-4 text-center">
                             <button

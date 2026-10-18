@@ -265,7 +265,7 @@ export function SettingsView() {
                 <input
                   type="text"
                   disabled
-                  value={`${workspace.currency || '€'} (Euro)`}
+                  value={`${workspace.currency || 'FCFA'} (Franc CFA CEMAC - République du Congo)`}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-medium"
                 />
               </div>

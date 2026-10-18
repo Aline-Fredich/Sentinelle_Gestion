@@ -269,16 +269,17 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Type d'accès
+                  <label className="text-[13px] font-semibold text-slate-700 dark:text-slate-300">
+                    Rôle dans le projet
                   </label>
                   <select
                     value={role}
                     onChange={e => setRole(e.target.value as WorkspaceRole)}
-                    className="apple-input w-full text-xs font-medium"
+                    className="apple-input w-full text-[13px] font-medium"
                   >
                     <option value="admin">Administrateur de Projet</option>
-                    <option value="super_admin">Super Administrateur</option>
+                    <option value="project_manager">Chef de Projet</option>
+                    <option value="member">Collaborateur (Membre)</option>
                   </select>
                 </div>
 

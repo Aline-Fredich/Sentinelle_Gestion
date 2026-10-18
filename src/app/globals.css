@@ -93,13 +93,15 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-/* Boutons Apple */
+/* Boutons Apple & Accessibilité Tactile (Minimum 44px selon Lot 1) */
 .apple-btn-primary {
   background-color: var(--brand);
   color: #FFFFFF;
-  font-weight: 500;
+  font-weight: 600;
   border-radius: 980px;
-  padding: 0.5rem 1.15rem;
+  min-height: 44px;
+  padding: 0.65rem 1.4rem;
+  font-size: 0.92rem;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   display: inline-flex;
   align-items: center;
@@ -119,10 +121,12 @@ body {
 .apple-btn-secondary {
   background: rgba(0, 0, 0, 0.05);
   color: var(--foreground);
-  font-weight: 500;
+  font-weight: 600;
   border-radius: 980px;
-  padding: 0.5rem 1.15rem;
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  min-height: 44px;
+  padding: 0.65rem 1.4rem;
+  font-size: 0.92rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   display: inline-flex;
   align-items: center;
@@ -132,7 +136,7 @@ body {
 
 .dark .apple-btn-secondary {
   background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: #F5F5F7;
 }
 
@@ -148,16 +152,26 @@ body {
   transform: scale(0.98);
 }
 
-/* Champs de saisie Apple */
+/* Champs de saisie Apple (Hauteur tactile 44px minimum) */
 .apple-input {
   background: rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.14);
   border-radius: 12px;
-  padding: 0.65rem 0.95rem;
+  min-height: 44px;
+  padding: 0.65rem 1rem;
   color: var(--foreground);
-  font-size: 0.9rem;
+  font-size: 0.93rem;
   transition: all 0.2s ease;
   outline: none;
+}
+
+/* Cible tactile 44px universelle */
+.touch-target-44 {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .dark .apple-input {

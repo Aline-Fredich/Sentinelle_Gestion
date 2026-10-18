@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { AlertTriangle, RefreshCcw } from 'lucide-react';
+import { AlertTriangle, RefreshCcw, Home } from 'lucide-react';
 
 export default function ErrorBoundary({
   error,
@@ -11,27 +11,41 @@ export default function ErrorBoundary({
   reset: () => void;
 }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
-      <div className="max-w-md w-full p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl text-center space-y-4">
-        <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-950/60 text-[#FF1E27] flex items-center justify-center mx-auto">
-          <AlertTriangle className="w-6 h-6" />
+    <main className="min-h-screen flex items-center justify-center bg-[#F5F5F7] dark:bg-[#000000] p-6">
+      <div className="max-w-lg w-full p-8 bg-white dark:bg-[#1C1C1E] rounded-3xl border border-black/10 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.12)] text-center space-y-6">
+        <div className="w-16 h-16 rounded-2xl bg-red-500/10 text-[#FF3B30] flex items-center justify-center mx-auto border border-red-500/20">
+          <AlertTriangle className="w-8 h-8" />
         </div>
-        <div>
-          <h2 className="text-base font-bold text-slate-900 dark:text-white">
+
+        <div className="space-y-2">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white">
             Une interruption inattendue est survenue
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+          </h1>
+          <p className="text-[14px] text-slate-600 dark:text-slate-300 leading-relaxed max-w-sm mx-auto">
             {error.message || "Impossible de charger la section demandée dans l'espace de travail."}
           </p>
         </div>
-        <button
-          onClick={() => reset()}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-[#0066FF] hover:bg-blue-600 text-white text-xs font-semibold rounded-xl shadow-md transition"
-        >
-          <RefreshCcw className="w-4 h-4" />
-          <span>Réessayer</span>
-        </button>
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          <button
+            onClick={() => reset()}
+            className="apple-btn-primary w-full sm:w-auto touch-target-44"
+          >
+            <RefreshCcw className="w-4 h-4" />
+            <span>Réessayer</span>
+          </button>
+          
+          <button
+            onClick={() => {
+              if (typeof window !== 'undefined') window.location.href = '/';
+            }}
+            className="apple-btn-secondary w-full sm:w-auto touch-target-44"
+          >
+            <Home className="w-4 h-4" />
+            <span>Vue d'ensemble</span>
+          </button>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }

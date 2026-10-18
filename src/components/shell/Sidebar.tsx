@@ -28,7 +28,9 @@ export function Sidebar({
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
-  // Groupes de navigation clairs et professionnels
+  // Navigation structurée selon Lot 1 : Projet / Travail quotidien / Administration / Plus
+  const isOperatorSuperAdmin = currentUser.role === 'super_admin' || currentUser.isSuperAdmin;
+
   const navSections: Array<{
     title: string;
     items: Array<{
@@ -40,63 +42,62 @@ export function Sidebar({
     }>;
   }> = [
     {
-      title: 'Vue Globale',
+      title: 'Projet',
       items: [
         { id: 'overview', label: 'Vue d’ensemble', icon: LayoutDashboard },
         { id: 'project_sheet', label: 'Fiche projet', icon: Layers },
-      ],
-    },
-    {
-      title: 'Planification & Suivi',
-      items: [
-        { id: 'tracking', label: 'Tableau de suivi', icon: BarChart2 },
-        { id: 'kanban', label: 'Tableau Kanban', icon: FolderKanban },
-        { id: 'sprints', label: 'Sprints Agile', icon: Zap, badge: 'Scrum', badgeColor: 'bg-blue-500/20 text-blue-400' },
         { id: 'gantt', label: 'Planning Gantt', icon: Calendar },
-        { id: 'calendar', label: 'Calendrier', icon: Calendar },
       ],
     },
     {
-      title: 'Pilotage & Rentabilité',
+      title: 'Travail quotidien',
       items: [
-        { id: 'finance', label: 'Budgets & Dépenses', icon: DollarSign },
+        { id: 'kanban', label: 'Tableau Kanban', icon: FolderKanban },
+        { id: 'tracking', label: 'Liste & Suivi', icon: BarChart2 },
+        { id: 'sprints', label: 'Sprints Agile', icon: Zap, badge: 'Scrum', badgeColor: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold' },
+        { id: 'calendar', label: 'Calendrier', icon: Calendar },
         { 
           id: 'timetracking', 
           label: 'Suivi du temps', 
           icon: Clock, 
           badge: activeTimer ? 'EN COURS' : undefined,
-          badgeColor: 'bg-emerald-500 text-white animate-pulse'
+          badgeColor: 'bg-emerald-500 text-white animate-pulse font-bold'
         },
-        { id: 'risks', label: 'Matrice des risques', icon: AlertTriangle },
       ],
     },
     {
-      title: 'Espace Collaboratif',
+      title: 'Administration',
       items: [
-        { id: 'forum', label: 'Forum du projet', icon: MessageSquare },
-        { id: 'wiki', label: 'Wiki & Base de savoir', icon: BookOpen },
-        { id: 'documents', label: 'Documents & Fichiers', icon: FileText },
+        { id: 'finance', label: 'Finances & Budgets', icon: DollarSign, badge: 'FCFA', badgeColor: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold' },
         { id: 'team', label: 'Équipe & Membres', icon: Users },
-      ],
-    },
-    {
-      title: 'Système',
-      items: [
         { 
           id: 'billing', 
           label: 'Abonnement & Quotas', 
           icon: CreditCard, 
           badge: subscription.planCode === 'premium' ? 'PRO' : undefined,
-          badgeColor: 'bg-cyan-500/20 text-cyan-300'
-        },
-        { 
-          id: 'super_admin', 
-          label: 'Super Administrateur', 
-          icon: ShieldCheck, 
-          badge: 'KPIs',
-          badgeColor: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20'
+          badgeColor: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-bold'
         },
         { id: 'settings', label: 'Paramètres', icon: Settings },
+      ],
+    },
+    {
+      title: 'Plus',
+      items: [
+        { id: 'documents', label: 'Documents & Fichiers', icon: FileText },
+        { id: 'wiki', label: 'Wiki & Base de savoir', icon: BookOpen },
+        { id: 'forum', label: 'Forum du projet', icon: MessageSquare },
+        { id: 'risks', label: 'Matrice des risques', icon: AlertTriangle },
+        ...(isOperatorSuperAdmin
+          ? [
+              { 
+                id: 'super_admin' as ActiveView, 
+                label: 'Opérateur SaaS (Super Admin)', 
+                icon: ShieldCheck, 
+                badge: 'SaaS',
+                badgeColor: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 font-bold'
+              },
+            ]
+          : []),
       ],
     },
   ];
@@ -259,7 +260,7 @@ export function Sidebar({
                   data-testid={`nav-${item.id}`}
                   onClick={() => handleSelectView(item.id)}
                   title={isCollapsed ? item.label : undefined}
-                  className={`flex items-center gap-3 w-full px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                  className={`flex items-center gap-3 w-full px-3 min-h-[44px] rounded-xl text-[13px] font-semibold transition-all ${
                     isActive
                       ? 'bg-[#0071E3] text-white shadow-sm'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
@@ -270,7 +271,7 @@ export function Sidebar({
                     <div className="flex-1 flex items-center justify-between min-w-0">
                       <span className="truncate">{item.label}</span>
                       {item.badge && (
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${item.badgeColor || 'bg-blue-500/10 text-blue-500'}`}>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${item.badgeColor || 'bg-blue-500/10 text-blue-500'}`}>
                           {item.badge}
                         </span>
                       )}

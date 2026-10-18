@@ -12,9 +12,9 @@ export const INITIAL_WORKSPACE: Workspace = {
   slug: 'sentinel-gestion',
   iconKey: 'shield',
   colorKey: 'blue',
-  currency: '€',
-  defaultHourlyRate: 75,
-  timezone: 'Europe/Paris',
+  currency: 'FCFA',
+  defaultHourlyRate: 15000,
+  timezone: 'Africa/Brazzaville',
 };
 
 export const INITIAL_USERS: User[] = [
@@ -774,7 +774,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     name: 'Découverte',
     tagline: 'Idéal pour démarrer seul ou tester SENTINEL GESTION.',
     priceMonth: 0,
-    currency: '€',
+    currency: 'FCFA',
     maxProjects: 3,
     maxMembers: 5,
     maxStorageMb: 250,
@@ -792,8 +792,8 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     code: 'premium',
     name: 'Pro Premium',
     tagline: 'Pour les équipes exigeantes nécessitant Gantt & pilotage complet.',
-    priceMonth: 12,
-    currency: '€',
+    priceMonth: 15000,
+    currency: 'FCFA',
     maxProjects: 25,
     maxMembers: 20,
     maxStorageMb: 10240, // 10 GB
@@ -806,7 +806,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'Export PDF soigné & rapports',
       'Historique d’audit illimité',
       '10 Go de stockage sécurisé',
-      'Support prioritaire par email',
+      'Support prioritaire MTN MoMo & WhatsApp',
     ],
   },
   {
@@ -814,8 +814,8 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     code: 'team',
     name: 'Organisation',
     tagline: 'Gouvernance avancée, multi-projets et conformité d’entreprise.',
-    priceMonth: 29,
-    currency: '€',
+    priceMonth: 45000,
+    currency: 'FCFA',
     maxProjects: 100,
     maxMembers: 100,
     maxStorageMb: 51200, // 50 GB
@@ -845,18 +845,18 @@ export const INITIAL_SUBSCRIPTION: WorkspaceSubscription = {
 // 1. BUDGETS & DÉPENSES
 // ---------------------------------------------------------------------------
 export const INITIAL_BUDGETS: ProjectBudget[] = [
-  { projectId: 'prj-1', targetBudget: 45000, currency: '€' },
-  { projectId: 'prj-2', targetBudget: 28000, currency: '€' },
-  { projectId: 'prj-3', targetBudget: 15000, currency: '€' },
+  { projectId: 'prj-1', targetBudget: 30000000, currency: 'FCFA' },
+  { projectId: 'prj-2', targetBudget: 18000000, currency: 'FCFA' },
+  { projectId: 'prj-3', targetBudget: 10000000, currency: 'FCFA' },
 ];
 
 export const INITIAL_EXPENSES: ProjectExpense[] = [
   {
     id: 'exp-1',
     projectId: 'prj-1',
-    title: 'Licences Figma Enterprise (Annuel)',
+    title: 'Licences Outils & Cloud (Annuel)',
     category: 'software',
-    amount: 1440,
+    amount: 950000,
     date: '2026-10-02',
     status: 'paid',
     createdBy: 'Thomas Laurent',
@@ -866,7 +866,7 @@ export const INITIAL_EXPENSES: ProjectExpense[] = [
     projectId: 'prj-1',
     title: 'Audit de sécurité & Pentest externe',
     category: 'consulting',
-    amount: 6500,
+    amount: 4250000,
     date: '2026-10-15',
     status: 'planned',
     createdBy: 'Sophie Martin',
@@ -874,9 +874,9 @@ export const INITIAL_EXPENSES: ProjectExpense[] = [
   {
     id: 'exp-3',
     projectId: 'prj-1',
-    title: 'Serveurs GPU d’entraînement & tests',
+    title: 'Serveurs d’infrastructure & tests',
     category: 'hardware',
-    amount: 3200,
+    amount: 2100000,
     date: '2026-10-08',
     status: 'paid',
     createdBy: 'Marc Benali',
@@ -884,9 +884,9 @@ export const INITIAL_EXPENSES: ProjectExpense[] = [
   {
     id: 'exp-4',
     projectId: 'prj-2',
-    title: 'Abonnement Cloud AWS & Base Supabase',
+    title: 'Abonnement Cloud & Base de Données',
     category: 'software',
-    amount: 850,
+    amount: 550000,
     date: '2026-10-01',
     status: 'paid',
     createdBy: 'Claire Vasseur',

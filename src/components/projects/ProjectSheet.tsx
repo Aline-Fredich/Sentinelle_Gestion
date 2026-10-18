@@ -16,6 +16,7 @@ import { TrackingBoard } from '@/components/tracking/TrackingBoard';
 import { EditProjectModal } from '@/components/dialogs/EditProjectModal';
 import { InviteMemberModal } from '@/components/team/InviteMemberModal';
 import { Task } from '@/types/sentinel';
+import { formatCurrency } from '@/lib/currencyUtils';
 
 interface ProjectSheetProps {
   onOpenTaskModal: (task?: Task) => void;
@@ -213,7 +214,7 @@ export function ProjectSheet({
           <div>
             <span className="text-slate-400 block text-[11px] mb-0.5">Budget Financier</span>
             <span className="font-semibold text-slate-900 dark:text-white block mt-1">
-              {currentProject.budget ? `${currentProject.budget.toLocaleString()} €` : '35 000 €'}
+              {formatCurrency(currentProject.budget || 25000000)}
             </span>
           </div>
         </div>

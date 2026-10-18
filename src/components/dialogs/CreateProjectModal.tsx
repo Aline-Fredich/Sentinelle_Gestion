@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { X, FolderPlus, Layers, Shield, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useSentinel } from '@/lib/store';
 import { ProjectPriority } from '@/types/sentinel';
+import { formatCurrency } from '@/lib/currencyUtils';
 
 interface CreateProjectModalProps {
   isOpen: boolean;
@@ -18,7 +19,7 @@ export const PROJECT_TEMPLATES = [
     iconKey: 'zap',
     terminology: { task: 'User Story', phase: 'Sprint', milestone: 'Release' },
     defaultPhases: ['Sprint 1 : Cadrage & Architecture', 'Sprint 2 : Développement Core', 'Sprint 3 : Recette & Mise en prod'],
-    budget: 45000,
+    budget: 30000000, // 30M FCFA
   },
   {
     id: 'chantier',
@@ -27,7 +28,7 @@ export const PROJECT_TEMPLATES = [
     iconKey: 'layers',
     terminology: { task: 'Lot de travaux', phase: 'Phase chantier', milestone: 'Réception' },
     defaultPhases: ['Gros œuvre & Fondations', 'Second œuvre & Réseaux', 'Finitions & Livraison'],
-    budget: 120000,
+    budget: 75000000, // 75M FCFA
   },
   {
     id: 'audit',
@@ -36,7 +37,7 @@ export const PROJECT_TEMPLATES = [
     iconKey: 'shield',
     terminology: { task: 'Point de contrôle', phase: 'Domaine d’audit', milestone: 'Rapport' },
     defaultPhases: ['Cartographie des vulnérabilités', 'Revue de code & RLS', 'Rapport de conformité'],
-    budget: 25000,
+    budget: 15000000, // 15M FCFA
   },
   {
     id: 'marketing',
@@ -45,7 +46,7 @@ export const PROJECT_TEMPLATES = [
     iconKey: 'calendar',
     terminology: { task: 'Livrable', phase: 'Vague marketing', milestone: 'Lancement' },
     defaultPhases: ['Branding & Stratégie', 'Production des assets', 'Diffusion & Analyse'],
-    budget: 35000,
+    budget: 20000000, // 20M FCFA
   },
   {
     id: 'recrutement',
@@ -54,7 +55,7 @@ export const PROJECT_TEMPLATES = [
     iconKey: 'users',
     terminology: { task: 'Candidat', phase: 'Étape de recrutement', milestone: 'Embauche' },
     defaultPhases: ['Sourcing & Présélection', 'Entretiens & Évaluations', 'Promesse & Intégration'],
-    budget: 15000,
+    budget: 10000000, // 10M FCFA
   },
 ];
 
@@ -193,10 +194,10 @@ export function CreateProjectModal({ isOpen, onClose }: CreateProjectModalProps)
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                         {tpl.description}
                       </p>
-                      <div className="flex items-center gap-2 mt-1.5 text-[10px] font-mono text-slate-400">
+                      <div className="flex items-center gap-2 mt-1.5 text-[11px] font-mono text-slate-400">
                         <span>Vocabulaire : {tpl.terminology.task} / {tpl.terminology.phase}</span>
                         <span>•</span>
-                        <span>Budget estimé : {tpl.budget.toLocaleString('fr-FR')} €</span>
+                        <span>Budget estimé : {formatCurrency(tpl.budget)}</span>
                       </div>
                     </div>
                   </button>

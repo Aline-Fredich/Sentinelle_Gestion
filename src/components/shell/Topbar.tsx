@@ -197,15 +197,17 @@ export function Topbar({
 
   return (
     <header className="h-20 px-6 border-b border-black/8 dark:border-white/10 bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-xl flex items-center justify-between gap-4 z-20">
-      {/* Titre & Fil d'ariane */}
+      {/* Fil d'Ariane & Titre de vue */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-0.5">
-          <span className="font-bold text-[#0071E3] dark:text-[#2997FF] tracking-wide uppercase">SENTINEL GESTION</span>
-          <span>/</span>
-          <span className="font-semibold text-slate-700 dark:text-slate-300">
-            {activeProjectId === 'all' ? 'Tous les projets' : (currentProject?.name || 'Projet')}
+        <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+          <span className="hover:text-slate-700 dark:hover:text-slate-200 transition">Espace</span>
+          <span className="text-slate-300 dark:text-slate-600">/</span>
+          <span className="font-semibold text-slate-700 dark:text-slate-200 truncate max-w-[220px]">
+            {activeProjectId === 'all' ? 'Portefeuille de projets' : (currentProject?.name || 'Projet actif')}
           </span>
-        </div>
+          <span className="text-slate-300 dark:text-slate-600">/</span>
+          <span className="text-[#0071E3] dark:text-[#2997FF] font-semibold">{currentMeta.title}</span>
+        </nav>
         <h1 className="text-lg font-bold text-slate-900 dark:text-white truncate">
           {currentMeta.title}
         </h1>
