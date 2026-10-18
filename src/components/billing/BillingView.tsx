@@ -3,30 +3,48 @@
 import React, { useState } from 'react';
 import { 
   CreditCard, Check, Shield, AlertCircle, ArrowUpRight, 
-  Sparkles, Layers, Users, HardDrive, CheckCircle2 
+  Sparkles, Layers, Users, HardDrive, CheckCircle2, Receipt, Download, Smartphone
 } from 'lucide-react';
 import { useSentinel } from '@/lib/store';
+import { SubscriptionPlan, PaymentTransaction } from '@/types/sentinel';
+import { formatCurrency } from '@/lib/currencyUtils';
+import { PaymentModal } from './PaymentModal';
+import { getSavedTransactions } from '@/lib/payments/mtnMomo';
 
 export function BillingView() {
   const { subscription, plans, quotas, upgradePlan } = useSentinel();
   const [selectedBillingCycle, setSelectedBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
+  // Modale de paiement MTN MoMo
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [targetPlanToPay, setTargetPlanToPay] = useState<SubscriptionPlan | null>(null);
+
   const currentPlan = plans.find(p => p.code === subscription.planCode) || plans[0];
+  const transactions = getSavedTransactions();
+
+  const handleSelectPlan = (plan: SubscriptionPlan) => {
+    if (plan.priceMonth === 0) {
+      upgradePlan(plan.code);
+    } else {
+      setTargetPlanToPay(plan);
+      setIsPaymentModalOpen(true);
+    }
+  };
 
   return (
-    <div className="space-y-7 max-w-5xl mx-auto">
+    <div className="space-y-7 max-w-5xl mx-auto pb-12">
       {/* En-tête */}
       <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-[#E4E7EC] dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-[#C83B42] dark:text-rose-400 mb-1 uppercase tracking-wider">
+          <div className="flex items-center gap-2 text-xs font-semibold text-[#0071E3] dark:text-[#2997FF] mb-1 uppercase tracking-wider">
             <CreditCard className="w-3.5 h-3.5" />
-            Monétisation & Quotas
+            Monétisation & Forfaits CEMAC (Congo)
           </div>
           <h1 className="text-xl font-bold text-[#202733] dark:text-white">
             Abonnement & Consommation des ressources
           </h1>
           <p className="text-xs text-[#667085] dark:text-slate-400 mt-1">
-            Gérez vos forfaits en toute transparence. Les quotas sont appliqués de manière prédictive.
+            Gérez vos forfaits en toute transparence. Règlement direct par MTN Mobile Money en Francs CFA (XAF).
           </p>
         </div>
 
@@ -54,12 +72,12 @@ export function BillingView() {
         </div>
       </div>
 
-      {/* État actuel de consommation des quotas (Section 11.3) */}
+      {/* État actuel de consommation des quotas */}
       <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-[#E4E7EC] dark:border-slate-800 shadow-sm space-y-4">
         <div className="flex items-center justify-between border-b border-[#E4E7EC] dark:border-slate-800 pb-3">
           <div>
             <h2 className="text-sm font-bold text-[#202733] dark:text-white">
-              Votre offre active : <span className="text-[#C83B42] font-black">{currentPlan.name}</span>
+              Votre offre active : <span className="text-[#0071E3] dark:text-[#2997FF] font-black">{currentPlan.name}</span>
             </h2>
             <p className="text-xs text-[#667085]">
               Renouvellement automatique le 12 novembre 2026 • Statut : Actif
@@ -130,7 +148,7 @@ export function BillingView() {
         </div>
       </div>
 
-      {/* Grille des offres (Section 11.1) */}
+      {/* Grille des offres en FCFA */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {plans.map(plan => {
           const isCurrent = subscription.planCode === plan.code;
@@ -141,14 +159,14 @@ export function BillingView() {
           return (
             <div
               key={plan.id}
-              className={`p-6 rounded-2xl bg-white dark:bg-slate-900 border flex flex-col justify-between transition relative ${
+              className={`p-6 rounded-3xl bg-white dark:bg-slate-900 border flex flex-col justify-between transition relative shadow-sm ${
                 plan.isPopular
-                  ? 'border-[#C83B42] shadow-lg ring-1 ring-[#C83B42]'
-                  : 'border-[#E4E7EC] dark:border-slate-800 shadow-sm'
+                  ? 'border-[#0071E3] dark:border-[#2997FF] shadow-lg ring-1 ring-[#0071E3]'
+                  : 'border-[#E4E7EC] dark:border-slate-800'
               }`}
             >
               {plan.isPopular && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-bold bg-[#C83B42] text-white shadow-sm uppercase tracking-wider">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-bold bg-[#0071E3] text-white shadow-sm uppercase tracking-wider">
                   Recommandé
                 </span>
               )}
@@ -164,8 +182,8 @@ export function BillingView() {
                 </div>
 
                 <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-black text-[#202733] dark:text-white">
-                    {displayPrice} {plan.currency}
+                  <span className="text-2xl font-black text-[#202733] dark:text-white">
+                    {formatCurrency(displayPrice, 'XAF')}
                   </span>
                   <span className="text-xs text-[#667085]">
                     / mois {selectedBillingCycle === 'yearly' && plan.priceMonth > 0 ? '(facturé annuellement)' : ''}
@@ -192,14 +210,19 @@ export function BillingView() {
                   </button>
                 ) : (
                   <button
-                    onClick={() => upgradePlan(plan.code)}
-                    className={`w-full py-2.5 text-xs font-semibold rounded-xl transition shadow-sm ${
+                    onClick={() => handleSelectPlan(plan)}
+                    className={`w-full py-2.5 text-xs font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-1.5 ${
                       plan.isPopular
-                        ? 'bg-[#C83B42] hover:bg-[#b03037] text-white'
+                        ? 'bg-[#0071E3] hover:bg-[#005bb5] text-white'
                         : 'bg-[#202733] hover:bg-slate-800 text-white dark:bg-slate-800 dark:hover:bg-slate-700'
                     }`}
                   >
-                    Choisir l’offre {plan.name}
+                    <span>Choisir {plan.name}</span>
+                    {plan.priceMonth > 0 && (
+                      <span className="px-1.5 py-0.5 rounded text-[9px] bg-[#FFCC00] text-black font-extrabold uppercase ml-1">
+                        MoMo
+                      </span>
+                    )}
                   </button>
                 )}
               </div>
@@ -207,6 +230,74 @@ export function BillingView() {
           );
         })}
       </div>
+
+      {/* Historique des Factures & Reçus Mobile Money */}
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-[#E4E7EC] dark:border-slate-800 shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-[#E4E7EC] dark:border-slate-800 pb-3">
+          <div className="flex items-center gap-2">
+            <Receipt className="w-4 h-4 text-[#0071E3] dark:text-[#2997FF]" />
+            <h3 className="text-sm font-bold text-[#202733] dark:text-white">
+              Historique des Factures & Règlements MTN Congo
+            </h3>
+          </div>
+          <span className="text-xs text-[#667085]">
+            Devise officielle : XAF (FCFA CEMAC)
+          </span>
+        </div>
+
+        {transactions.length === 0 ? (
+          <div className="py-6 text-center space-y-1 text-xs text-[#667085]">
+            <p>Aucune transaction Mobile Money enregistrée pour le moment.</p>
+            <p className="text-[11px] text-slate-400">
+              Vos prochains reçus MTN Congo apparaîtront automatiquement ici avec option d'impression.
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-[#E4E7EC] dark:divide-slate-800 text-xs">
+            {transactions.map(tx => (
+              <div key={tx.id} className="py-3 flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>{tx.planName}</span>
+                    <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-[#FFCC00] text-black">
+                      MTN
+                    </span>
+                    <span className="text-slate-400 font-mono text-[11px]">{tx.reference}</span>
+                  </div>
+                  <div className="text-[11px] text-[#667085]">
+                    {new Date(tx.createdAt).toLocaleDateString('fr-CG')} à {new Date(tx.createdAt).toLocaleTimeString('fr-CG')} • {tx.phoneNumber}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <span className="font-black text-slate-900 dark:text-white">
+                    {formatCurrency(tx.amount, 'XAF')}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-[#23845B] dark:bg-emerald-950/40">
+                    Payé
+                  </span>
+                  <button
+                    onClick={() => window.print()}
+                    className="p-1.5 rounded-lg border border-black/5 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/10 text-slate-500"
+                    title="Imprimer le reçu"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modale de paiement MTN MoMo */}
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        targetPlan={targetPlanToPay}
+        billingCycle={selectedBillingCycle}
+      />
     </div>
   );
 }
+

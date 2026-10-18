@@ -275,6 +275,25 @@ export interface WorkspaceSubscription {
   status: 'active' | 'trialing' | 'canceled';
   currentPeriodEnd: string;
   storageUsedMb: number;
+  lastPaymentId?: string;
+}
+
+export interface PaymentTransaction {
+  id: string;
+  reference: string;
+  amount: number;
+  currency: 'XAF' | 'FCFA';
+  operator: 'mtn_congo';
+  phoneNumber: string;
+  planCode: 'discovery' | 'premium' | 'team';
+  planName: string;
+  billingCycle: 'monthly' | 'yearly';
+  status: 'pending' | 'successful' | 'failed';
+  externalReference?: string;
+  createdAt: string;
+  completedAt?: string;
+  payerName?: string;
+  receiptNumber?: string;
 }
 
 // ---------------------------------------------------------------------------
