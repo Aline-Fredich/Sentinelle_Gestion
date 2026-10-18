@@ -21,6 +21,7 @@ import { getTodayDateString, isDateOverdue, isDateToday, isDateUpcoming } from '
 import { generateId } from '@/lib/idUtils';
 import { wouldCreateDependencyCycle } from '@/domain/dependencies';
 import { initializeAndMigrateDatabase, db } from '@/lib/repository';
+import { persistEntityDebounced, persistUiPreferences } from '@/lib/repository/debouncedPersistence';
 import { createLocalAvatarSvg } from '@/lib/avatarUtils';
 import { 
   evaluateChecklistAutoReview, 
@@ -313,82 +314,59 @@ export function SentinelProvider({ children }: { children: React.ReactNode }) {
     initializeAndMigrateDatabase().catch(console.error);
   }, []);
 
-  // Sauvegarde automatique exhaustive lors des mutations (localStorage + Dexie)
-  const persistState = useCallback(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        projects,
-        phases,
-        tasks,
-        dependencies,
-        milestones,
-        documents,
-        activities,
-        notifications,
-        users,
-        invitations,
-        forumTopics,
-        forumPosts,
-        subscription,
-        activeProjectId,
-        expenses,
-        budgets,
-        timeEntries,
-        activeTimer,
-        sprints,
-        wikiPages,
-        risks,
-        shares,
-      }));
-    } catch {
-      // Fallback si quota dépassé
-    }
-
-    // Persistance asynchrone sécurisée dans IndexedDB Dexie
-    if (typeof window !== 'undefined') {
-      db.transaction('rw', [
-        db.projects, db.phases, db.tasks, db.dependencies,
-        db.milestones, db.documents, db.expenses, db.timeEntries,
-        db.sprints, db.wikiPages, db.risks, db.shares
-      ], async () => {
-        await db.projects.clear();
-        if (projects.length > 0) await db.projects.bulkPut(projects);
-        await db.phases.clear();
-        if (phases.length > 0) await db.phases.bulkPut(phases);
-        await db.tasks.clear();
-        if (tasks.length > 0) await db.tasks.bulkPut(tasks);
-        await db.dependencies.clear();
-        if (dependencies.length > 0) await db.dependencies.bulkPut(dependencies);
-        await db.milestones.clear();
-        if (milestones.length > 0) await db.milestones.bulkPut(milestones);
-        await db.documents.clear();
-        if (documents.length > 0) await db.documents.bulkPut(documents);
-        await db.expenses.clear();
-        if (expenses.length > 0) await db.expenses.bulkPut(expenses);
-        await db.timeEntries.clear();
-        if (timeEntries.length > 0) await db.timeEntries.bulkPut(timeEntries);
-        await db.sprints.clear();
-        if (sprints.length > 0) await db.sprints.bulkPut(sprints);
-        await db.wikiPages.clear();
-        if (wikiPages.length > 0) await db.wikiPages.bulkPut(wikiPages);
-        await db.risks.clear();
-        if (risks.length > 0) await db.risks.bulkPut(risks);
-        await db.shares.clear();
-        if (shares.length > 0) await db.shares.bulkPut(shares);
-      }).catch(err => {
-        console.warn('Synchronisation Dexie:', err);
-      });
-    }
-  }, [
-    projects, phases, tasks, dependencies, milestones, documents,
-    activities, notifications, users, invitations, forumTopics,
-    forumPosts, subscription, activeProjectId, expenses, budgets,
-    timeEntries, activeTimer, sprints, wikiPages, risks, shares
-  ]);
+  // Lot 2 : Persistance différentielle par entité avec debounce (IndexedDB Dexie)
+  // Évite les gels d'interface et les réécritures complètes de la base
+  useEffect(() => {
+    persistEntityDebounced('tasks', db.tasks, tasks);
+  }, [tasks]);
 
   useEffect(() => {
-    persistState();
-  }, [persistState]);
+    persistEntityDebounced('projects', db.projects, projects);
+  }, [projects]);
+
+  useEffect(() => {
+    persistEntityDebounced('phases', db.phases, phases);
+  }, [phases]);
+
+  useEffect(() => {
+    persistEntityDebounced('dependencies', db.dependencies, dependencies);
+  }, [dependencies]);
+
+  useEffect(() => {
+    persistEntityDebounced('milestones', db.milestones, milestones);
+  }, [milestones]);
+
+  useEffect(() => {
+    persistEntityDebounced('documents', db.documents, documents);
+  }, [documents]);
+
+  useEffect(() => {
+    persistEntityDebounced('expenses', db.expenses, expenses);
+  }, [expenses]);
+
+  useEffect(() => {
+    persistEntityDebounced('timeEntries', db.timeEntries, timeEntries);
+  }, [timeEntries]);
+
+  useEffect(() => {
+    persistEntityDebounced('sprints', db.sprints, sprints);
+  }, [sprints]);
+
+  useEffect(() => {
+    persistEntityDebounced('wikiPages', db.wikiPages, wikiPages);
+  }, [wikiPages]);
+
+  useEffect(() => {
+    persistEntityDebounced('risks', db.risks, risks);
+  }, [risks]);
+
+  useEffect(() => {
+    persistEntityDebounced('shares', db.shares, shares);
+  }, [shares]);
+
+  useEffect(() => {
+    persistUiPreferences({ activeProjectId, activeView });
+  }, [activeProjectId, activeView]);
 
   const resetFilters = useCallback(() => {
     setFilters({

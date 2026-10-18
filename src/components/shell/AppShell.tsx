@@ -1,37 +1,76 @@
 'use client';
 
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useSentinel } from '@/lib/store';
 import { Sidebar } from '@/components/shell/Sidebar';
 import { Topbar } from '@/components/shell/Topbar';
-import { OverviewDashboard } from '@/components/dashboard/OverviewDashboard';
-import { ProjectSheet } from '@/components/projects/ProjectSheet';
-import { TrackingBoard } from '@/components/tracking/TrackingBoard';
-import { KanbanBoard } from '@/components/kanban/KanbanBoard';
-import { GanttChart } from '@/components/planning/GanttChart';
-import { CalendarView } from '@/components/calendar/CalendarView';
-import { DocumentsView } from '@/components/documents/DocumentsView';
-import { TeamView } from '@/components/team/TeamView';
-import { SettingsView } from '@/components/settings/SettingsView';
-import { ProjectForumView } from '@/components/forum/ProjectForumView';
-import { BillingView } from '@/components/billing/BillingView';
-import { FinanceView } from '@/components/finance/FinanceView';
-import { TimeTrackingView } from '@/components/timetracking/TimeTrackingView';
-import { SprintsView } from '@/components/sprints/SprintsView';
-import { WikiView } from '@/components/wiki/WikiView';
-import { RisksView } from '@/components/risks/RisksView';
-import { SuperAdminDashboard } from '@/components/superadmin/SuperAdminDashboard';
-
-import { TaskModal } from '@/components/dialogs/TaskModal';
-import { IconPickerModal } from '@/components/icons/IconPickerModal';
-import { ShareModal } from '@/components/dialogs/ShareModal';
-import { ExportModal } from '@/components/dialogs/ExportModal';
-import { ImportModal } from '@/components/dialogs/ImportModal';
-import { SecurityGdprModal } from '@/components/settings/SecurityGdprModal';
-import { ExecutiveReportModal } from '@/components/reports/ExecutiveReportModal';
-import { CreateProjectModal } from '@/components/dialogs/CreateProjectModal';
-import { AuthModal } from '@/components/auth/AuthModal';
+import { ViewLoadingSkeleton } from '@/components/shell/ViewLoadingSkeleton';
 import { Task, TaskStatus } from '@/types/sentinel';
+
+// Chargement différé à la demande (Lot 2 : Réduction drastique du bundle initial et optimisation LCP/INP)
+const OverviewDashboard = dynamic(() => import('@/components/dashboard/OverviewDashboard').then(mod => mod.OverviewDashboard), {
+  loading: () => <ViewLoadingSkeleton />,
+});
+const ProjectSheet = dynamic(() => import('@/components/projects/ProjectSheet').then(mod => mod.ProjectSheet), {
+  loading: () => <ViewLoadingSkeleton />,
+});
+const TrackingBoard = dynamic(() => import('@/components/tracking/TrackingBoard').then(mod => mod.TrackingBoard), {
+  loading: () => <ViewLoadingSkeleton />,
+});
+const KanbanBoard = dynamic(() => import('@/components/kanban/KanbanBoard').then(mod => mod.KanbanBoard), {
+  loading: () => <ViewLoadingSkeleton />,
+});
+const GanttChart = dynamic(() => import('@/components/planning/GanttChart').then(mod => mod.GanttChart), {
+  loading: () => <ViewLoadingSkeleton />,
+});
+const CalendarView = dynamic(() => import('@/components/calendar/CalendarView').then(mod => mod.CalendarView), {
+  loading: () => <ViewLoadingSkeleton />,
+});
+const DocumentsView = dynamic(() => import('@/components/documents/DocumentsView').then(mod => mod.DocumentsView), {
+  loading: () => <ViewLoadingSkeleton />,
+});
+const TeamView = dynamic(() => import('@/components/team/TeamView').then(mod => mod.TeamView), {
+  loading: () => <ViewLoadingSkeleton />,
+});
+const SettingsView = dynamic(() => import('@/components/settings/SettingsView').then(mod => mod.SettingsView), {
+  loading: () => <ViewLoadingSkeleton />,
+});
+const ProjectForumView = dynamic(() => import('@/components/forum/ProjectForumView').then(mod => mod.ProjectForumView), {
+  loading: () => <ViewLoadingSkeleton />,
+});
+const BillingView = dynamic(() => import('@/components/billing/BillingView').then(mod => mod.BillingView), {
+  loading: () => <ViewLoadingSkeleton />,
+});
+const FinanceView = dynamic(() => import('@/components/finance/FinanceView').then(mod => mod.FinanceView), {
+  loading: () => <ViewLoadingSkeleton />,
+});
+const TimeTrackingView = dynamic(() => import('@/components/timetracking/TimeTrackingView').then(mod => mod.TimeTrackingView), {
+  loading: () => <ViewLoadingSkeleton />,
+});
+const SprintsView = dynamic(() => import('@/components/sprints/SprintsView').then(mod => mod.SprintsView), {
+  loading: () => <ViewLoadingSkeleton />,
+});
+const WikiView = dynamic(() => import('@/components/wiki/WikiView').then(mod => mod.WikiView), {
+  loading: () => <ViewLoadingSkeleton />,
+});
+const RisksView = dynamic(() => import('@/components/risks/RisksView').then(mod => mod.RisksView), {
+  loading: () => <ViewLoadingSkeleton />,
+});
+const SuperAdminDashboard = dynamic(() => import('@/components/superadmin/SuperAdminDashboard').then(mod => mod.SuperAdminDashboard), {
+  loading: () => <ViewLoadingSkeleton />,
+});
+
+// Boîtes de dialogue modales chargées uniquement à la demande
+const TaskModal = dynamic(() => import('@/components/dialogs/TaskModal').then(mod => mod.TaskModal));
+const IconPickerModal = dynamic(() => import('@/components/icons/IconPickerModal').then(mod => mod.IconPickerModal));
+const ShareModal = dynamic(() => import('@/components/dialogs/ShareModal').then(mod => mod.ShareModal));
+const ExportModal = dynamic(() => import('@/components/dialogs/ExportModal').then(mod => mod.ExportModal));
+const ImportModal = dynamic(() => import('@/components/dialogs/ImportModal').then(mod => mod.ImportModal));
+const SecurityGdprModal = dynamic(() => import('@/components/settings/SecurityGdprModal').then(mod => mod.SecurityGdprModal));
+const ExecutiveReportModal = dynamic(() => import('@/components/reports/ExecutiveReportModal').then(mod => mod.ExecutiveReportModal));
+const CreateProjectModal = dynamic(() => import('@/components/dialogs/CreateProjectModal').then(mod => mod.CreateProjectModal));
+const AuthModal = dynamic(() => import('@/components/auth/AuthModal').then(mod => mod.AuthModal));
 
 interface AppShellProps {
   children?: React.ReactNode;

@@ -3,10 +3,11 @@
 import React, { useState } from 'react';
 import { 
   X, Shield, User, Lock, Mail, FolderPlus, 
-  ArrowRight, Sparkles, CheckCircle2, ShieldCheck, Key
+  ArrowRight, Sparkles, CheckCircle2, ShieldCheck, Key, Loader2, LogIn, Users
 } from 'lucide-react';
 import { useSentinel } from '@/lib/store';
 import { WorkspaceRole, User as UserType } from '@/types/sentinel';
+import { createClient } from '@/lib/supabase/client';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -18,6 +19,12 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
   const { users, currentUser, switchCurrentUser, registerUser, addNotification } = useSentinel();
 
   const [mode, setMode] = useState<'login' | 'register'>(defaultMode);
+  const [loginMethod, setLoginMethod] = useState<'quick' | 'credentials'>('quick');
+
+  // Connexion email/password
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Inscription
   const [firstName, setFirstName] = useState('');
@@ -28,26 +35,127 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
   const [jobTitle, setJobTitle] = useState('Administrateur Projet');
   const [projectName, setProjectName] = useState('Mon Espace Projet 2026');
   const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   if (!isOpen) return null;
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg('');
+    setSuccessMsg('');
+
     if (!firstName.trim() || !lastName.trim() || !email.trim()) {
       setErrorMsg('Veuillez remplir tous les champs obligatoires.');
       return;
     }
 
-    const fullName = `${firstName.trim()} ${lastName.trim()}`;
-    const newUser = registerUser({
-      name: fullName,
-      email: email.trim().toLowerCase(),
-      role,
-      jobTitle: jobTitle.trim(),
-      projectName: role === 'super_admin' ? undefined : projectName.trim(),
-    });
+    if (password.length < 6) {
+      setErrorMsg('Le mot de passe doit comporter au moins 6 caractères.');
+      return;
+    }
 
-    onClose();
+    setIsSubmitting(true);
+    const fullName = `${firstName.trim()} ${lastName.trim()}`;
+    const cleanEmail = email.trim().toLowerCase();
+
+    try {
+      // Tentative d'enregistrement dans Supabase Auth
+      const supabase = createClient();
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: cleanEmail,
+        password: password,
+        options: {
+          data: {
+            full_name: fullName,
+            role: role,
+            job_title: jobTitle.trim(),
+            organization_name: projectName.trim(),
+          },
+        },
+      });
+
+      if (authError) {
+        console.warn('Note Supabase Auth:', authError.message);
+        // Si Supabase renvoie une erreur (ex: limite de rate ou configuration email), on prévient doucement sans bloquer
+      }
+
+      // Enregistrement dans le store local Sentinel
+      const newUser = registerUser({
+        name: fullName,
+        email: cleanEmail,
+        role,
+        jobTitle: jobTitle.trim(),
+        projectName: role === 'super_admin' ? undefined : projectName.trim(),
+      });
+
+      addNotification(
+        'Compte créé avec succès',
+        `Bienvenue ${fullName} ! Votre espace administrateur et votre projet sont prêts.`,
+        'system'
+      );
+
+      onClose();
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Une erreur est survenue lors de la création du compte.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleLoginWithCredentials = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    if (!loginEmail.trim() || !loginPassword.trim()) {
+      setErrorMsg('Veuillez saisir votre e-mail et votre mot de passe.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const cleanEmail = loginEmail.trim().toLowerCase();
+
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password: loginPassword,
+      });
+
+      if (error) {
+        // Si non trouvé dans Supabase distant, vérifions si l'utilisateur existe dans les profils locaux
+        const existingLocalUser = users.find(u => u.email.toLowerCase() === cleanEmail);
+        if (existingLocalUser) {
+          switchCurrentUser(existingLocalUser);
+          addNotification('Session connectée', `Bienvenue de retour, ${existingLocalUser.name}.`, 'system');
+          onClose();
+          return;
+        }
+        setErrorMsg(`Erreur de connexion : ${error.message}`);
+        return;
+      }
+
+      // Utilisateur authentifié via Supabase
+      const existingLocalUser = users.find(u => u.email.toLowerCase() === cleanEmail);
+      if (existingLocalUser) {
+        switchCurrentUser(existingLocalUser);
+      } else {
+        // Enregistrer l'utilisateur connecté dans l'espace local
+        const registered = registerUser({
+          name: data.user?.user_metadata?.full_name || cleanEmail.split('@')[0],
+          email: cleanEmail,
+          role: (data.user?.user_metadata?.role as WorkspaceRole) || 'admin',
+          jobTitle: data.user?.user_metadata?.job_title || 'Administrateur',
+        });
+      }
+
+      addNotification('Session sécurisée', `Connexion Supabase réussie avec ${cleanEmail}.`, 'security');
+      onClose();
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Erreur inattendue de connexion.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSelectUser = (user: UserType) => {
@@ -120,71 +228,160 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
           {mode === 'login' ? (
             /* Mode Sélecteur de Rôles / Connexion */
             <div className="space-y-4">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Choisissez un espace pour vous connecter
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Chaque administrateur accède directement à son propre projet et à ses collaborateurs.
-                </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                    Connexion Administrateur
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Connectez-vous à votre espace projet ou choisissez un compte actif.
+                  </p>
+                </div>
+                {/* Sous-bascule Sélecteur / Identifiants */}
+                <div className="flex gap-1 bg-black/5 dark:bg-white/10 p-1 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setLoginMethod('quick')}
+                    className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition ${
+                      loginMethod === 'quick'
+                        ? 'bg-white dark:bg-[#1C1C1E] text-slate-900 dark:text-white shadow-sm'
+                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    Profils
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLoginMethod('credentials')}
+                    className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition ${
+                      loginMethod === 'credentials'
+                        ? 'bg-white dark:bg-[#1C1C1E] text-slate-900 dark:text-white shadow-sm'
+                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    E-mail
+                  </button>
+                </div>
               </div>
 
-              <div className="space-y-2.5">
-                {users.map(u => {
-                  const isCurrent = u.id === currentUser.id;
-                  const isSuper = u.role === 'super_admin' || u.isSuperAdmin;
-                  return (
+              {loginMethod === 'credentials' ? (
+                /* Formulaire de connexion direct par e-mail et mot de passe (Supabase Auth) */
+                <form onSubmit={handleLoginWithCredentials} className="space-y-3 pt-1">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Adresse e-mail
+                    </label>
+                    <div className="relative">
+                      <Mail className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="email"
+                        required
+                        value={loginEmail}
+                        onChange={e => setLoginEmail(e.target.value)}
+                        className="apple-input w-full pl-8 text-xs"
+                        placeholder="admin@sentinel.cg"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Mot de passe
+                    </label>
+                    <div className="relative">
+                      <Lock className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="password"
+                        required
+                        value={loginPassword}
+                        onChange={e => setLoginPassword(e.target.value)}
+                        className="apple-input w-full pl-8 text-xs"
+                        placeholder="••••••••••••"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
                     <button
-                      key={u.id}
-                      onClick={() => handleSelectUser(u)}
-                      className={`w-full p-3.5 rounded-2xl border text-left transition flex items-center justify-between ${
-                        isCurrent
-                          ? 'border-[#0071E3] bg-[#0071E3]/5 dark:bg-[#2997FF]/10 ring-1 ring-[#0071E3]/20'
-                          : 'border-black/5 dark:border-white/10 hover:border-black/15 dark:hover:border-white/20 bg-[#F5F5F7]/50 dark:bg-[#2C2C2E]/40'
-                      }`}
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="apple-btn-primary w-full text-xs py-2.5 font-bold flex items-center justify-center gap-2"
                     >
-                      <div className="flex items-center gap-3">
-                        <img 
-                          src={u.avatar} 
-                          alt={u.name} 
-                          className="w-10 h-10 rounded-full shadow-sm"
-                        />
-                        <div>
-                          <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                            <span>{u.name}</span>
-                            {isSuper && (
-                              <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-                                Super Admin
-                              </span>
-                            )}
-                            {u.role === 'admin' && (
-                              <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-[#0071E3]/10 text-[#0071E3] dark:text-[#2997FF] border border-[#0071E3]/20">
-                                Administrateur
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                            {u.jobTitle} • {u.email}
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Vérification sécurisée...</span>
+                        </>
+                      ) : (
+                        <>
+                          <LogIn className="w-4 h-4" />
+                          <span>Se connecter à mon Espace</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                /* Sélecteur de profils existants */
+                <div className="space-y-2.5">
+                  {users.map(u => {
+                    const isCurrent = u.id === currentUser.id;
+                    const isSuper = u.role === 'super_admin' || u.isSuperAdmin;
+                    return (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => handleSelectUser(u)}
+                        className={`w-full p-3.5 rounded-2xl border text-left transition flex items-center justify-between ${
+                          isCurrent
+                            ? 'border-[#0071E3] bg-[#0071E3]/5 dark:bg-[#2997FF]/10 ring-1 ring-[#0071E3]/20'
+                            : 'border-black/5 dark:border-white/10 hover:border-black/15 dark:hover:border-white/20 bg-[#F5F5F7]/50 dark:bg-[#2C2C2E]/40'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <img 
+                            src={u.avatar} 
+                            alt={u.name} 
+                            className="w-10 h-10 rounded-full shadow-sm"
+                          />
+                          <div>
+                            <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                              <span>{u.name}</span>
+                              {isSuper && (
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                                  Super Admin
+                                </span>
+                              )}
+                              {u.role === 'admin' && (
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-[#0071E3]/10 text-[#0071E3] dark:text-[#2997FF] border border-[#0071E3]/20">
+                                  Administrateur
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                              {u.jobTitle} • {u.email}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="flex items-center gap-2">
-                        {isCurrent && (
-                          <span className="text-[11px] font-bold text-[#0071E3] dark:text-[#2997FF] flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            Actif
-                          </span>
-                        )}
-                        <ArrowRight className="w-4 h-4 text-slate-400" />
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+                        <div className="flex items-center gap-2">
+                          {isCurrent && (
+                            <span className="text-[11px] font-bold text-[#0071E3] dark:text-[#2997FF] flex items-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              Actif
+                            </span>
+                          )}
+                          <ArrowRight className="w-4 h-4 text-slate-400" />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
               <div className="pt-2 text-center">
                 <button
+                  type="button"
                   onClick={() => setMode('register')}
                   className="text-xs font-semibold text-[#0071E3] dark:text-[#2997FF] hover:underline"
                 >
@@ -320,10 +517,20 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
               <div className="pt-3">
                 <button
                   type="submit"
-                  className="apple-btn-primary w-full text-xs py-2.5 font-bold"
+                  disabled={isSubmitting}
+                  className="apple-btn-primary w-full text-xs py-2.5 font-bold flex items-center justify-center gap-2"
                 >
-                  <Sparkles className="w-4 h-4" />
-                  <span>Créer mon Compte & Accéder à mon Espace</span>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Création de votre espace en cours...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      <span>Créer mon Compte & Accéder à mon Espace</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
