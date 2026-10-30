@@ -1,17 +1,22 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Search, Filter, Plus, Bell, Moon, Sun, 
-  X, Share2, Play, Square, Clock, Download, Upload, ShieldCheck, FileText 
+  Search, Filter, Plus, Bell, Palette, 
+  X, Share2, Play, Square, Clock, Download, Upload, ShieldCheck, FileText,
+  SlidersHorizontal, ChevronDown, FolderPlus, Sun, Moon
 } from 'lucide-react';
 import { useSentinel } from '@/lib/store';
+import { useTheme } from '@/context/ThemeContext';
+import { AppearancePopover } from '@/components/theme/AppearancePopover';
 import { formatRelativeTimeFrench } from '@/lib/dateUtils';
 import { TaskPriority, TaskStatus } from '@/types/sentinel';
 import { SyncStatusBadge } from '@/components/sync/SyncStatusBadge';
+import { Button } from '@/components/ui/Button';
 
 interface TopbarProps {
-  onOpenNewTaskModal: () => void;
+  onOpenNewTaskModal?: () => void;
+  onOpenCreateProjectModal?: () => void;
   onOpenShareModal?: () => void;
   onOpenExportModal?: () => void;
   onOpenImportModal?: () => void;
@@ -22,6 +27,7 @@ interface TopbarProps {
 
 export function Topbar({
   onOpenNewTaskModal,
+  onOpenCreateProjectModal,
   onOpenShareModal,
   onOpenExportModal,
   onOpenImportModal,
@@ -37,31 +43,30 @@ export function Topbar({
     currentUser
   } = useSentinel();
 
+  const { themeData, isDark, setTheme } = useTheme();
   const [showFilterPopover, setShowFilterPopover] = useState(false);
   const [showNotifPopover, setShowNotifPopover] = useState(false);
   const [showTimerPopover, setShowTimerPopover] = useState(false);
+  const [showAppearancePopover, setShowAppearancePopover] = useState(false);
+  const [showActionsMenu, setShowActionsMenu] = useState(false);
+  const actionsMenuRef = useRef<HTMLDivElement>(null);
   const [timerDesc, setTimerDesc] = useState('');
   const [timerSeconds, setTimerSeconds] = useState(0);
-  const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // Synchronisation du thème sombre au montage
+  // Fermer le menu Actions au clic extérieur
   useEffect(() => {
-    try {
-      const savedTheme = localStorage.getItem('sentinel_theme');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const shouldBeDark = savedTheme ? savedTheme === 'dark' : prefersDark;
-      setIsDarkMode(shouldBeDark);
-      if (shouldBeDark) {
-        document.documentElement.classList.add('dark');
-        document.documentElement.classList.remove('light');
-      } else {
-        document.documentElement.classList.remove('dark');
-        document.documentElement.classList.add('light');
+    function handleClickOutside(event: MouseEvent) {
+      if (actionsMenuRef.current && !actionsMenuRef.current.contains(event.target as Node)) {
+        setShowActionsMenu(false);
       }
-    } catch {
-      // Pas d'accès au localStorage (ex: SSR)
     }
-  }, []);
+    if (showActionsMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showActionsMenu]);
 
   // Décompte temps en direct lorsque le chronomètre est actif
   useEffect(() => {
@@ -89,25 +94,7 @@ export function Topbar({
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const toggleDarkMode = () => {
-    setIsDarkMode(prev => {
-      const next = !prev;
-      try {
-        if (next) {
-          document.documentElement.classList.add('dark');
-          document.documentElement.classList.remove('light');
-          localStorage.setItem('sentinel_theme', 'dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-          document.documentElement.classList.add('light');
-          localStorage.setItem('sentinel_theme', 'light');
-        }
-      } catch {
-        // Ignorer
-      }
-      return next;
-    });
-  };
+
 
   const titles: Record<string, { title: string; subtitle: string }> = {
     overview: {
@@ -131,7 +118,7 @@ export function Topbar({
       subtitle: 'Gestion des itérations, backlog de tâches, vélocité et graphique burndown',
     },
     gantt: {
-      title: 'Planning & Diagramme de Gantt',
+      title: 'Planning Visuel & Chronogramme',
       subtitle: 'Phases ordonnées, barres temporelles et dépendances strictes',
     },
     calendar: {
@@ -143,7 +130,7 @@ export function Topbar({
       subtitle: 'Suivi des coûts réels engagés, marge financière et rentabilité du projet',
     },
     timetracking: {
-      title: 'Suivi du temps & Feuilles de temps',
+      title: 'Feuilles d’heures & Chronométrage',
       subtitle: 'Chronométrage des sessions de travail et récapitulatif par membre',
     },
     risks: {
@@ -196,37 +183,56 @@ export function Topbar({
   const unreadNotifs = notifications.filter(n => !n.read);
 
   return (
-    <header className="h-20 px-6 border-b border-black/8 dark:border-white/10 bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-xl flex items-center justify-between gap-4 z-20">
+    <header className="min-h-[64px] px-6 border-b border-[var(--border)] bg-[var(--surface)] text-[var(--text)] flex items-center justify-between gap-6 z-20">
       {/* Fil d'Ariane & Titre de vue */}
-      <div className="flex-1 min-w-0">
-        <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-          <span className="hover:text-slate-700 dark:hover:text-slate-200 transition">Espace</span>
-          <span className="text-slate-300 dark:text-slate-600">/</span>
-          <span className="font-semibold text-slate-700 dark:text-slate-200 truncate max-w-[220px]">
-            {activeProjectId === 'all' ? 'Portefeuille de projets' : (currentProject?.name || 'Projet actif')}
+      <div className="min-w-0 max-w-[36%] flex-1 overflow-hidden pr-2">
+        <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-xs font-medium text-[var(--text-muted)] mb-1 font-mono truncate">
+          <span className="hover:text-[var(--text)] transition shrink-0">ESPACE</span>
+          <span className="text-[var(--text-muted)] shrink-0">/</span>
+          <span className="font-semibold text-[var(--text)] truncate max-w-[180px]">
+            {activeProjectId === 'all' ? 'PORTEFEUILLE PROJETS' : (currentProject?.name?.toUpperCase() || 'PROJET ACTIF')}
           </span>
-          <span className="text-slate-300 dark:text-slate-600">/</span>
-          <span className="text-[#0071E3] dark:text-[#2997FF] font-semibold">{currentMeta.title}</span>
+          <span className="text-[var(--text-muted)] shrink-0">/</span>
+          <span className="text-[var(--brand)] font-bold truncate">{currentMeta.title.toUpperCase()}</span>
         </nav>
-        <h1 className="text-lg font-bold text-slate-900 dark:text-white truncate">
-          {currentMeta.title}
-        </h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-lg font-bold text-[var(--text)] truncate font-ui">
+            {currentMeta.title}
+          </h1>
+          <span className="badge-role shrink-0">
+            {currentUser.role === 'super_admin' ? 'SUPER ADMIN' : 'ADMIN PROJET'}
+          </span>
+        </div>
       </div>
 
       {/* Barre d'outils centrale & droite */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5 shrink-0">
+        {/* Horloge numérique technique temps réel */}
+        <div className="hidden lg:flex clock">
+          <Clock className="w-4 h-4 text-[var(--color-primary)]" />
+          <div>
+            <div className="time text-white text-xs font-mono font-bold leading-none">
+              {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+            </div>
+            <div className="date text-[9px] text-white/45 font-mono leading-none mt-0.5">
+              {new Date().toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' }).toUpperCase()}
+            </div>
+          </div>
+        </div>
+
         {/* Widget Chronomètre interactif en direct */}
         <div className="relative">
           {activeTimer ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 shadow-sm animate-pulse">
-              <Clock className="w-4 h-4 text-[#0066FF]" />
-              <span className="font-mono font-bold text-sm tracking-wider">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#000000] border border-[var(--color-primary)] text-white shadow-[var(--glow-sm)]">
+              <span className="w-2 h-2 rounded-full bg-[var(--color-primary)] animate-pulse" />
+              <Clock className="w-4 h-4 text-[var(--color-primary)]" />
+              <span className="font-mono font-bold text-sm tracking-wider text-white">
                 {formatTimerDisplay(timerSeconds)}
               </span>
               <button
                 onClick={stopTimer}
                 title="Arrêter et enregistrer la session"
-                className="ml-1 p-1 rounded-lg bg-red-600 hover:bg-red-700 text-white transition shadow-sm"
+                className="ml-1 p-1 rounded bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white transition shadow-sm"
               >
                 <Square className="w-3.5 h-3.5 fill-current" />
               </button>
@@ -235,16 +241,16 @@ export function Topbar({
             <div>
               <button
                 onClick={() => setShowTimerPopover(!showTimerPopover)}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition border border-slate-200 dark:border-slate-700"
+                className="btn btn-secondary btn-sm"
               >
-                <Play className="w-3.5 h-3.5 text-[#0066FF] fill-current" />
-                <span className="hidden md:inline">Chronométrer</span>
+                <Play className="w-3.5 h-3.5 text-[var(--color-primary)] fill-current" />
+                <span className="hidden md:inline">CHRONO</span>
               </button>
 
               {/* Popover démarrage chrono rapide */}
               {showTimerPopover && (
-                <div className="absolute right-0 top-12 w-72 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-4 z-50 animate-in fade-in zoom-in-95">
-                  <div className="text-xs font-bold text-slate-900 dark:text-white mb-2">
+                <div className="absolute right-0 top-12 w-72 bg-[#050505] rounded-md shadow-[0_12px_32px_rgba(0,0,0,0.9)] border border-[#242424] p-4 z-50 animate-in fade-in zoom-in-95">
+                  <div className="text-xs font-bold text-white mb-2 font-mono uppercase">
                     Démarrer un chronomètre
                   </div>
                   <input
@@ -252,7 +258,7 @@ export function Topbar({
                     value={timerDesc}
                     onChange={(e) => setTimerDesc(e.target.value)}
                     placeholder="Objet de la tâche..."
-                    className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl mb-3 text-slate-800 dark:text-white"
+                    className="form-input text-xs mb-3"
                   />
                   <div className="flex gap-2">
                     <button
@@ -262,13 +268,13 @@ export function Topbar({
                         setShowTimerPopover(false);
                         setTimerDesc('');
                       }}
-                      className="flex-1 py-1.5 bg-[#0066FF] hover:bg-blue-600 text-white font-semibold text-xs rounded-xl transition"
+                      className="btn btn-primary btn-sm flex-1"
                     >
                       Lancer
                     </button>
                     <button
                       onClick={() => setShowTimerPopover(false)}
-                      className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs rounded-xl"
+                      className="btn btn-secondary btn-sm"
                     >
                       Annuler
                     </button>
@@ -281,54 +287,72 @@ export function Topbar({
 
         {/* Recherche instantanée */}
         <div className="relative w-44 sm:w-60">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-primary)]" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Rechercher..."
-            className="w-full pl-9 pr-8 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0066FF] transition"
+            placeholder="RECHERCHER..."
+            className="w-full pl-9 pr-12 py-1.5 text-xs bg-[#000000] border border-[#242424] rounded-md text-white placeholder:text-white/45 focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] font-ui transition"
           />
+          <kbd className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:inline-block">
+            Ctrl K
+          </kbd>
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-white/45 hover:text-white"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
 
+
+
+        {/* Action contextuelle : Nouveau Projet sur la vue Portefeuille */}
+        {onOpenCreateProjectModal && activeView === 'overview' && (
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<FolderPlus className="w-3.5 h-3.5 text-[var(--brand)]" />}
+            onClick={onOpenCreateProjectModal}
+            className="font-semibold"
+            title="Créer un nouveau projet"
+          >
+            <span className="hidden md:inline">NOUVEAU PROJET</span>
+          </Button>
+        )}
+
         {/* Bouton Filtrer avec Popover */}
         <div className="relative">
-          <button
+          <Button
+            variant={activeFiltersCount > 0 ? 'primary' : 'secondary'}
+            size="sm"
+            icon={<Filter className="w-3.5 h-3.5" />}
             onClick={() => setShowFilterPopover(!showFilterPopover)}
-            className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border transition ${
-              activeFiltersCount > 0
-                ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-300 dark:border-blue-700 text-[#0066FF]'
-                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
-            }`}
+            title="Filtrer les tâches"
+            aria-label="Filtrer les tâches"
           >
-            <Filter className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Filtrer</span>
+            <span className="hidden sm:inline font-mono">FILTRER</span>
             {activeFiltersCount > 0 && (
-              <span className="w-4 h-4 rounded-full bg-[#0066FF] text-white text-[10px] flex items-center justify-center font-bold">
+              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-white text-black leading-none">
                 {activeFiltersCount}
               </span>
             )}
-          </button>
+          </Button>
 
           {/* Panneau de filtres */}
           {showFilterPopover && (
-            <div className="absolute right-0 top-12 w-72 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-4 z-50 animate-in fade-in zoom-in-95">
-              <div className="flex items-center justify-between pb-2 mb-3 border-b border-slate-100 dark:border-slate-700">
-                <span className="text-xs font-bold text-slate-900 dark:text-white">
+            <div className="absolute right-0 top-12 w-72 bg-[var(--surface-raised)] rounded-md shadow-[var(--shadow)] border border-[var(--border)] p-4 z-50 animate-in fade-in zoom-in-95 text-[var(--text)]">
+              <div className="flex items-center justify-between pb-2 mb-3 border-b border-[var(--border)]">
+                <span className="text-xs font-bold text-[var(--text)] uppercase font-mono">
                   Filtres actifs
                 </span>
                 {activeFiltersCount > 0 && (
                   <button
                     onClick={resetFilters}
-                    className="text-[11px] text-[#0066FF] font-medium hover:underline"
+                    className="text-[11px] text-[var(--brand)] font-semibold hover:underline"
                   >
                     Effacer tout
                   </button>
@@ -338,13 +362,13 @@ export function Topbar({
               <div className="space-y-3 text-xs">
                 {/* Intervenant */}
                 <div>
-                  <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">
+                  <label className="block text-[var(--text-muted)] mb-1 font-medium font-mono text-[11px] uppercase">
                     Responsable assigné
                   </label>
                   <select
                     value={filters.memberId || ''}
                     onChange={(e) => setFilters(prev => ({ ...prev, memberId: e.target.value || undefined }))}
-                    className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200"
+                    className="w-full px-2.5 py-1.5 text-xs bg-[var(--surface)] border border-[var(--border)] rounded text-[var(--text)] focus:outline-none focus:border-[var(--brand)]"
                   >
                     <option value="">Tous les membres</option>
                     {users.map(u => (
@@ -357,133 +381,263 @@ export function Topbar({
 
                 {/* Priorité */}
                 <div>
-                  <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">
+                  <label className="block text-[var(--text-muted)] mb-1 font-medium font-mono text-[11px] uppercase">
                     Priorité
                   </label>
                   <select
                     value={filters.priority || 'all'}
                     onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value as TaskPriority | 'all' }))}
-                    className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200"
+                    className="w-full px-2.5 py-1.5 text-xs bg-[var(--surface)] border border-[var(--border)] rounded text-[var(--text)] focus:outline-none focus:border-[var(--brand)]"
                   >
                     <option value="all">Toutes les priorités</option>
-                    <option value="urgent">🔴 Urgente</option>
-                    <option value="high">🟠 Haute</option>
-                    <option value="medium">🟡 Moyenne</option>
-                    <option value="low">🟢 Basse</option>
+                    <option value="urgent">URGENTE</option>
+                    <option value="high">HAUTE</option>
+                    <option value="medium">MOYENNE</option>
+                    <option value="low">BASSE</option>
                   </select>
                 </div>
 
                 {/* Statut */}
                 <div>
-                  <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">
+                  <label className="block text-[var(--text-muted)] mb-1 font-medium font-mono text-[11px] uppercase">
                     Statut
                   </label>
                   <select
                     value={filters.status || 'all'}
                     onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value as TaskStatus | 'all' }))}
-                    className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200"
+                    className="w-full px-2.5 py-1.5 text-xs bg-[var(--surface)] border border-[var(--border)] rounded text-[var(--text)] focus:outline-none focus:border-[var(--brand)]"
                   >
                     <option value="all">Tous les statuts</option>
-                    <option value="todo">À faire</option>
-                    <option value="in_progress">En cours</option>
-                    <option value="in_review">En revue</option>
-                    <option value="done">Terminé</option>
+                    <option value="todo">À FAIRE</option>
+                    <option value="in_progress">EN COURS</option>
+                    <option value="in_review">EN REVUE</option>
+                    <option value="done">TERMINÉ</option>
                   </select>
                 </div>
               </div>
 
-              <div className="mt-4 pt-2 border-t border-slate-100 dark:border-slate-700">
-                <button
+              <div className="mt-4 pt-2 border-t border-[var(--border)]">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  fullWidth
                   onClick={() => setShowFilterPopover(false)}
-                  className="w-full py-1.5 bg-[#0066FF] hover:bg-blue-600 text-white rounded-lg font-semibold text-xs transition"
                 >
                   Appliquer
-                </button>
+                </Button>
               </div>
             </div>
           )}
         </div>
 
-        {/* Action principale : + Nouvelle tâche */}
-        <button
-          data-testid="btn-new-task"
-          onClick={onOpenNewTaskModal}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-[#0066FF] hover:bg-blue-600 active:bg-blue-700 rounded-xl shadow-md shadow-blue-500/20 transition"
-        >
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">Nouvelle tâche</span>
-        </button>
-
-        {/* Bouton Partager */}
-        {onOpenShareModal && (
-          <button
-            onClick={onOpenShareModal}
-            className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-            title="Partager le projet"
-          >
-            <Share2 className="w-4 h-4" />
-          </button>
-        )}
-
-        {/* Bouton Synthèse Exécutive CoDir */}
-        {onOpenReportModal && (
-          <button
-            data-testid="btn-report-modal"
-            onClick={onOpenReportModal}
-            className="p-2 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-            title="Synthèse Exécutive pour CoDir / Copil (Rapport PDF)"
-          >
-            <FileText className="w-4 h-4" />
-          </button>
-        )}
-
-        {/* Bouton Exporter */}
+        {/* Export direct */}
         {onOpenExportModal && (
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             data-testid="btn-export-modal"
             onClick={onOpenExportModal}
-            className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-            title="Exporter les données (JSON / CSV)"
+            icon={<Download className="w-3.5 h-3.5 text-[var(--brand)]" />}
+            title="Exporter les données (CSV, JSON)"
+            aria-label="Exporter"
+            className="hidden sm:inline-flex"
           >
-            <Download className="w-4 h-4" />
-          </button>
+            <span className="hidden xl:inline font-mono text-xs uppercase">EXPORTER</span>
+          </Button>
         )}
 
-        {/* Bouton Importer */}
-        {onOpenImportModal && (
-          <button
-            onClick={onOpenImportModal}
-            className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-            title="Importer un fichier (JSON / CSV)"
+        {/* Sécurité & RGPD direct */}
+        {onOpenSecurityModal && (
+          <Button
+            variant="secondary"
+            size="sm"
+            data-testid="btn-security-modal-direct"
+            onClick={onOpenSecurityModal}
+            icon={<ShieldCheck className="w-3.5 h-3.5 text-[var(--brand)]" />}
+            title="Sécurité & Conformité RGPD"
+            aria-label="Sécurité et conformité"
+            className="hidden sm:inline-flex"
           >
-            <Upload className="w-4 h-4" />
-          </button>
+            <span className="hidden xl:inline font-mono text-xs uppercase">SÉCURITÉ</span>
+          </Button>
+        )}
+
+        {/* Menu déroulant groupé : Outils & Actions Secondaires */}
+        {(onOpenShareModal || onOpenReportModal || onOpenExportModal || onOpenImportModal || onOpenSecurityModal || onOpenCreateProjectModal) && (
+          <div className="relative" ref={actionsMenuRef}>
+            <Button
+              data-testid="btn-tools-menu"
+              variant="secondary"
+              size="sm"
+              icon={<SlidersHorizontal className="w-3.5 h-3.5 text-[var(--brand)]" />}
+              iconRight={<ChevronDown className={`w-3 h-3 text-[var(--text-muted)] transition-transform ${showActionsMenu ? 'rotate-180' : ''}`} />}
+              onClick={() => setShowActionsMenu(!showActionsMenu)}
+              title="Outils et actions complémentaires"
+              aria-label="Outils du projet"
+              aria-expanded={showActionsMenu}
+            >
+              <span className="hidden md:inline font-mono text-xs uppercase">OUTILS</span>
+            </Button>
+
+            {showActionsMenu && (
+              <div className="absolute right-0 top-11 w-64 bg-[var(--surface-raised)] rounded-md shadow-[var(--shadow)] border border-[var(--border)] p-1.5 z-50 animate-in fade-in zoom-in-95 font-ui text-[var(--text)]">
+                <div className="px-2.5 py-1.5 text-[10px] font-mono font-bold uppercase text-[var(--text-muted)] tracking-wider border-b border-[var(--border)] mb-1">
+                  Outils & Actions complémentaires
+                </div>
+
+                {/* Nouveau projet via menu */}
+                {onOpenCreateProjectModal && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowActionsMenu(false);
+                      onOpenCreateProjectModal();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded text-xs text-[var(--text)] hover:bg-[var(--surface-2)] transition text-left group"
+                  >
+                    <div className="w-6 h-6 rounded bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center shrink-0">
+                      <FolderPlus className="w-3.5 h-3.5 text-[var(--brand)]" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-semibold text-[var(--text)] group-hover:text-[var(--brand)]">Nouveau projet</div>
+                      <div className="text-[10px] text-[var(--text-muted)]">Créer un espace de projet</div>
+                    </div>
+                  </button>
+                )}
+
+                {/* Synthèse CoDir */}
+                {onOpenReportModal && (
+                  <button
+                    type="button"
+                    data-testid="btn-report-modal"
+                    onClick={() => {
+                      setShowActionsMenu(false);
+                      onOpenReportModal();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded text-xs text-[var(--text)] hover:bg-[var(--surface-2)] transition text-left group"
+                  >
+                    <div className="w-6 h-6 rounded bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center shrink-0">
+                      <FileText className="w-3.5 h-3.5 text-[var(--brand)]" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-semibold text-[var(--text)] group-hover:text-[var(--brand)]">Rapport CoDir / Copil</div>
+                      <div className="text-[10px] text-[var(--text-muted)]">Synthèse exécutive PDF</div>
+                    </div>
+                  </button>
+                )}
+
+                {/* Partager */}
+                {onOpenShareModal && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowActionsMenu(false);
+                      onOpenShareModal();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded text-xs text-[var(--text)] hover:bg-[var(--surface-2)] transition text-left group"
+                  >
+                    <div className="w-6 h-6 rounded bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center shrink-0">
+                      <Share2 className="w-3.5 h-3.5 text-[var(--brand)]" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-semibold text-[var(--text)] group-hover:text-[var(--brand)]">Partager le projet</div>
+                      <div className="text-[10px] text-[var(--text-muted)]">Lien et droits d'accès</div>
+                    </div>
+                  </button>
+                )}
+
+                {/* Exporter */}
+                {onOpenExportModal && (
+                  <button
+                    type="button"
+                    data-testid="btn-export-modal-menu"
+                    onClick={() => {
+                      setShowActionsMenu(false);
+                      onOpenExportModal();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded text-xs text-[var(--text)] hover:bg-[var(--surface-2)] transition text-left group"
+                  >
+                    <div className="w-6 h-6 rounded bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center shrink-0">
+                      <Download className="w-3.5 h-3.5 text-[var(--brand)]" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-semibold text-[var(--text)] group-hover:text-[var(--brand)]">Exporter les données</div>
+                      <div className="text-[10px] text-[var(--text-muted)]">Format CSV ou JSON</div>
+                    </div>
+                  </button>
+                )}
+
+                {/* Importer */}
+                {onOpenImportModal && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowActionsMenu(false);
+                      onOpenImportModal();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded text-xs text-[var(--text)] hover:bg-[var(--surface-2)] transition text-left group"
+                  >
+                    <div className="w-6 h-6 rounded bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center shrink-0">
+                      <Upload className="w-3.5 h-3.5 text-[var(--brand)]" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-semibold text-[var(--text)] group-hover:text-[var(--brand)]">Importer un fichier</div>
+                      <div className="text-[10px] text-[var(--text-muted)]">Restaurer des sauvegardes</div>
+                    </div>
+                  </button>
+                )}
+
+                {/* Sécurité & Audit RGPD */}
+                {onOpenSecurityModal && (
+                  <button
+                    type="button"
+                    data-testid="btn-security-modal"
+                    onClick={() => {
+                      setShowActionsMenu(false);
+                      onOpenSecurityModal();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded text-xs text-[var(--text)] hover:bg-[var(--surface-2)] transition text-left group border-t border-[var(--border)] mt-1 pt-2"
+                  >
+                    <div className="w-6 h-6 rounded bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center shrink-0">
+                      <ShieldCheck className="w-3.5 h-3.5 text-[var(--brand)]" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-semibold text-[var(--text)] group-hover:text-[var(--brand)]">Sécurité & Conformité</div>
+                      <div className="text-[10px] text-[var(--text-muted)]">Journal d'audit & RGPD</div>
+                    </div>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         )}
 
         {/* Notifications */}
         <div className="relative">
           <button
             onClick={() => setShowNotifPopover(!showNotifPopover)}
-            className="relative p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            className="btn btn-secondary btn-icon relative"
             title="Notifications"
           >
-            <Bell className="w-4 h-4" />
+            <Bell className="w-4 h-4 text-[var(--color-primary)]" />
             {unreadNotifs.length > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-[#FF1E27] ring-2 ring-white dark:ring-slate-900" />
+              <span className="count-dot">
+                {unreadNotifs.length}
+              </span>
             )}
           </button>
 
           {/* Popover notifications */}
           {showNotifPopover && (
-            <div className="absolute right-0 top-12 w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-4 z-50 animate-in fade-in zoom-in-95">
-              <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-700">
-                <span className="text-xs font-bold text-slate-900 dark:text-white">
+            <div className="absolute right-0 top-12 w-80 bg-[var(--surface-raised)] rounded-md shadow-[var(--shadow)] border border-[var(--border)] p-4 z-50 animate-in fade-in zoom-in-95 text-[var(--text)]">
+              <div className="flex items-center justify-between pb-2 mb-2 border-b border-[var(--border)]">
+                <span className="text-xs font-bold text-[var(--text)] uppercase font-mono">
                   Notifications ({unreadNotifs.length})
                 </span>
                 {unreadNotifs.length > 0 && (
                   <button
                     onClick={markAllNotificationsAsRead}
-                    className="text-[11px] text-[#0066FF] font-medium hover:underline"
+                    className="text-[11px] text-[var(--brand)] font-semibold hover:underline"
                   >
                     Tout marquer comme lu
                   </button>
@@ -492,7 +646,7 @@ export function Topbar({
 
               <div className="max-h-72 overflow-y-auto space-y-2">
                 {notifications.length === 0 ? (
-                  <p className="text-xs text-slate-500 dark:text-slate-400 text-center py-4">
+                  <p className="text-xs text-[var(--text-muted)] text-center py-4">
                     Aucune notification.
                   </p>
                 ) : (
@@ -500,19 +654,19 @@ export function Topbar({
                     <div
                       key={n.id}
                       onClick={() => markNotificationAsRead(n.id)}
-                      className={`p-2.5 rounded-xl border text-xs cursor-pointer transition ${
+                      className={`p-2.5 rounded border text-xs cursor-pointer transition ${
                         !n.read
-                          ? 'bg-blue-50/60 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800'
-                          : 'bg-white dark:bg-slate-800/40 border-slate-100 dark:border-slate-700 text-slate-500'
+                          ? 'bg-[var(--surface-2)] border-[var(--brand)] text-[var(--text)]'
+                          : 'bg-[var(--surface)] border-[var(--border)] text-[var(--text-muted)]'
                       }`}
                     >
-                      <div className="flex items-center justify-between font-semibold text-slate-900 dark:text-white">
+                      <div className="flex items-center justify-between font-semibold text-[var(--text)]">
                         <span>{n.title}</span>
-                        <span className="text-[10px] text-slate-400 font-normal">
+                        <span className="text-[10px] text-[var(--text-muted)] font-mono">
                           {formatRelativeTimeFrench(n.createdAt)}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-1">
+                      <p className="text-[11px] text-[var(--text-muted)] mt-1">
                         {n.message}
                       </p>
                     </div>
@@ -523,62 +677,53 @@ export function Topbar({
           )}
         </div>
 
-        {/* Indicateur de synchronisation & Hors-ligne */}
-        <SyncStatusBadge />
-
-        {/* Bouton Sécurité & Conformité RGPD */}
-        {onOpenSecurityModal && (
-          <button
-            data-testid="btn-security-modal"
-            onClick={onOpenSecurityModal}
-            className="p-2 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-            title="Sécurité, Journal d'Audit & Conformité RGPD"
-          >
-            <ShieldCheck className="w-4 h-4" />
-          </button>
-        )}
-
-        {/* Toggle Mode Clair / Sombre */}
+        {/* Interrupteur Thème Clair / Sombre */}
         <button
+          type="button"
           data-testid="btn-theme-toggle"
-          onClick={toggleDarkMode}
-          className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition"
-          title={isDarkMode ? 'Passer en mode clair' : 'Passer en mode sombre'}
+          onClick={() => {
+            const next = isDark ? 'blanc' : 'nuit';
+            setTheme(next);
+          }}
+          className="btn btn-secondary btn-icon"
+          title={isDark ? 'Passer en thème clair (Blanc)' : 'Passer en thème sombre (Nuit)'}
+          aria-label="Basculer thème clair/sombre"
         >
-          {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
+          {isDark ? <Sun className="w-4 h-4 text-[var(--color-primary)]" /> : <Moon className="w-4 h-4 text-[var(--color-primary)]" />}
         </button>
 
-        {/* Bouton Compte Apple & Sélecteur d'Espace (Admin / Super Admin) */}
-        {onOpenAuthModal && (
-          <button
-            onClick={onOpenAuthModal}
-            className="flex items-center gap-2.5 py-1 px-2.5 rounded-full bg-[#F5F5F7] dark:bg-[#2C2C2E] border border-black/5 dark:border-white/10 hover:border-black/15 dark:hover:border-white/20 transition active:scale-95 shadow-sm"
-            title="Changer de compte ou configurer un administrateur"
+        {/* Bouton et Popover Apparence globale */}
+        <div className="relative">
+          <Button
+            variant="secondary"
+            size="sm"
+            data-testid="btn-appearance"
+            onClick={() => setShowAppearancePopover(!showAppearancePopover)}
+            icon={<Palette className="w-3.5 h-3.5 text-[var(--brand)]" />}
+            title="Personnaliser l'apparence : 4 thèmes de fond (Alt+T)"
+            aria-label="Apparence globale"
           >
-            <img
-              src={currentUser.avatar}
-              alt={currentUser.name}
-              className="w-7 h-7 rounded-full shadow-sm"
+            <span className="hidden xl:inline text-xs font-bold uppercase tracking-wider font-mono">
+              APPARENCE
+            </span>
+            <span
+              className="w-2.5 h-2.5 rounded-full inline-block shadow-sm transition-transform group-hover:scale-125 ml-0.5"
+              style={{
+                backgroundColor: themeData.colors.primary,
+                boxShadow: `0 0 6px ${themeData.colors.primary}`,
+              }}
+              title={`Thème actif : ${themeData.name}`}
             />
-            <div className="text-left hidden md:block">
-              <div className="text-xs font-bold text-slate-900 dark:text-white leading-tight flex items-center gap-1.5">
-                <span>{currentUser.name}</span>
-                {currentUser.role === 'super_admin' ? (
-                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 font-extrabold uppercase">
-                    Super Admin
-                  </span>
-                ) : (
-                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-[#0071E3]/10 text-[#0071E3] dark:text-[#2997FF] font-extrabold uppercase">
-                    Admin
-                  </span>
-                )}
-              </div>
-              <div className="text-[10px] text-slate-400 leading-tight">
-                {currentUser.jobTitle}
-              </div>
-            </div>
-          </button>
-        )}
+          </Button>
+
+          <AppearancePopover
+            isOpen={showAppearancePopover}
+            onClose={() => setShowAppearancePopover(false)}
+          />
+        </div>
+
+        {/* Indicateur de synchronisation & Hors-ligne */}
+        <SyncStatusBadge />
       </div>
     </header>
   );

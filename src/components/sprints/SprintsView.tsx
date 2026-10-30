@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { 
-  Zap, Calendar, Plus, Flame
+  Zap, Calendar, Plus, Flame, X
 } from 'lucide-react';
 import { useSentinel } from '@/lib/store';
 import { Task, TaskStatus } from '@/types/sentinel';
@@ -73,8 +73,6 @@ export function SprintsView() {
     setNewSprintGoal('');
   };
 
-
-
   const burndownResult = useMemo(() => {
     if (!activeSprint) {
       return { totalPoints: 0, completedPoints: 0, remainingPoints: 0, points: [] };
@@ -88,42 +86,45 @@ export function SprintsView() {
   const burndownPoints = burndownResult.points;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* En-tête du module Sprints */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-5 bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-950/50 flex items-center justify-center text-[#0066FF] shadow-sm">
-            <Zap className="w-6 h-6" />
+      <div className="panel flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-[6px] border border-red bg-red/10 flex items-center justify-center text-red">
+            <Zap className="w-5 h-5 text-red" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">
-              Gestion des Sprints & Méthodologie Agile
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-red shadow-[var(--glow-sm)]" />
+              <h1 className="text-base font-bold text-white uppercase tracking-wider">
+                GESTION DES SPRINTS & MÉTHODOLOGIE AGILE
+              </h1>
+            </div>
+            <p className="text-xs text-white/45 mt-0.5">
               Planifiez vos cycles itératifs (Scrum), suivez le burndown et gérez le backlog
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <select
             value={selectedSprintId}
             onChange={(e) => setSelectedSprintId(e.target.value)}
-            className="px-3 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-[#0066FF]"
+            className="form-select uppercase font-bold text-xs w-auto py-1.5"
           >
             {sprints.map(s => (
               <option key={s.id} value={s.id}>
-                {s.name} ({s.status === 'active' ? 'En cours' : s.status === 'completed' ? 'Clôturé' : 'À venir'})
+                {s.name.toUpperCase()} ({s.status === 'active' ? 'EN COURS' : s.status === 'completed' ? 'CLÔTURÉ' : 'À VENIR'})
               </option>
             ))}
           </select>
 
           <button
             onClick={() => setShowNewSprintModal(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#0066FF] hover:bg-blue-600 rounded-xl shadow-md shadow-blue-500/20 transition"
+            className="btn btn-primary btn-sm"
           >
-            <Plus className="w-4 h-4" />
-            <span>Nouveau sprint</span>
+            <Plus className="w-4 h-4 text-white" />
+            <span>NOUVEAU SPRINT</span>
           </button>
         </div>
       </div>
@@ -131,128 +132,120 @@ export function SprintsView() {
       {activeSprint && (
         <>
           {/* Fiche d'avancement du Sprint Actif */}
-          <div className="p-5 bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+          <div className="panel space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase ${
-                    activeSprint.status === 'active' 
-                      ? 'bg-emerald-100 text-emerald-800' 
-                      : activeSprint.status === 'completed'
-                      ? 'bg-slate-100 text-slate-700'
-                      : 'bg-blue-100 text-blue-800'
-                  }`}>
-                    {activeSprint.status === 'active' ? 'Sprint Actif' : activeSprint.status === 'completed' ? 'Clôturé' : 'Planifié'}
+                  <span className={activeSprint.status === 'active' ? 'badge badge--ok text-[10px]' : 'badge text-[10px]'}>
+                    {activeSprint.status === 'active' ? 'SPRINT ACTIF' : activeSprint.status === 'completed' ? 'CLÔTURÉ' : 'PLANIFIÉ'}
                   </span>
-                  <span className="text-xs text-slate-500 flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5" />
-                    Du {activeSprint.startDate} au {activeSprint.endDate}
+                  <span className="text-micro font-mono text-white/45 flex items-center gap-1">
+                    <Calendar className="w-3 h-3 text-red" />
+                    DU {activeSprint.startDate} AU {activeSprint.endDate}
                   </span>
                 </div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mt-1">
+                <h3 className="text-base font-bold text-white uppercase tracking-wide mt-1">
                   {activeSprint.name}
                 </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                  🎯 <strong>Objectif :</strong> {activeSprint.goal}
+                <p className="text-xs text-white/70 mt-1">
+                  🎯 <strong>OBJECTIF :</strong> {activeSprint.goal}
                 </p>
               </div>
 
               <div className="flex items-center gap-5">
                 <div className="text-right">
-                  <span className="text-xs font-semibold text-slate-500">Story Points (Effort)</span>
-                  <div className="text-xl font-black text-[#0066FF]">
+                  <span className="kpi-label">Story Points</span>
+                  <div className="text-lg font-mono font-bold text-white">
                     {completedSprintPoints} / {totalSprintPoints} SP
                   </div>
-                  <span className="text-[11px] text-slate-400">{remainingSprintPoints} SP restants</span>
+                  <span className="kpi-delta font-mono">{remainingSprintPoints} SP restants</span>
                 </div>
 
-                <div className="text-right border-l border-slate-200 dark:border-slate-700 pl-4">
-                  <span className="text-xs font-semibold text-slate-500">Tâches Réalisées</span>
-                  <div className="text-xl font-black text-emerald-600">
+                <div className="text-right border-l border-[#242424] pl-4">
+                  <span className="kpi-label">Tâches Réalisées</span>
+                  <div className="text-lg font-mono font-bold text-white">
                     {completedCount} / {totalCount}
                   </div>
-                  <span className="text-[11px] text-slate-400">{sprintProgress}% accompli</span>
+                  <span className="kpi-delta font-mono">{sprintProgress}% accompli</span>
                 </div>
 
                 {activeSprint.status === 'future' && (
                   <button
                     onClick={() => updateSprintStatus(activeSprint.id, 'active')}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md transition"
+                    className="btn btn-primary btn-sm"
                   >
-                    Démarrer le sprint
+                    DÉMARRER LE SPRINT
                   </button>
                 )}
                 {activeSprint.status === 'active' && (
                   <button
                     onClick={() => updateSprintStatus(activeSprint.id, 'completed')}
-                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold shadow-md transition"
+                    className="btn btn-secondary btn-sm"
                   >
-                    Terminer le sprint
+                    TERMINER LE SPRINT
                   </button>
                 )}
               </div>
             </div>
 
-            {/* Barre de progression des Story Points */}
+            {/* Progression des Story Points */}
             <div className="space-y-1.5 pt-2">
-              <div className="flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-400">
-                <span>Progression de l'effort (Story Points)</span>
+              <div className="flex justify-between text-micro font-mono text-white/70 uppercase">
+                <span>Progression de l'effort</span>
                 <span>{totalSprintPoints > 0 ? Math.round((completedSprintPoints / totalSprintPoints) * 100) : 0}%</span>
               </div>
-              <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
-                <div 
-                  className="bg-[#0066FF] h-full rounded-full transition-all duration-500" 
-                  style={{ width: `${totalSprintPoints > 0 ? Math.round((completedSprintPoints / totalSprintPoints) * 100) : 0}%` }} 
-                />
+              <div className="progress">
+                <span style={{ width: `${totalSprintPoints > 0 ? Math.round((completedSprintPoints / totalSprintPoints) * 100) : 0}%` }} />
               </div>
             </div>
           </div>
 
-          {/* Graphique Courbe Burndown (Burndown Chart) */}
-          <div className="p-5 bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
+          {/* Graphique Courbe Burndown (Règle 10 : Rouge, Blanc, Pointillé) */}
+          <div className="panel space-y-4">
+            <div className="flex items-center justify-between border-b border-[#242424] pb-3">
               <div className="flex items-center gap-2">
-                <Flame className="w-4 h-4 text-[#FF1E27]" />
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Courbe Burndown du Sprint (Idéal vs Réalisé)
+                <Flame className="w-4 h-4 text-red" />
+                <h4 className="panel-title mb-0">
+                  COURBE BURNDOWN DU SPRINT (IDÉAL VS RÉALISÉ)
                 </h4>
               </div>
-              <div className="flex items-center gap-4 text-xs font-semibold">
-                <div className="flex items-center gap-1.5 text-slate-400">
-                  <span className="w-3 h-0.5 bg-slate-400 border-t border-dashed" />
+              <div className="flex items-center gap-4 text-micro font-mono uppercase">
+                <div className="flex items-center gap-1.5 text-white/45">
+                  <span className="w-3 h-0.5 border-t border-dashed border-white" />
                   <span>Trajectoire idéale</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[#0066FF]">
-                  <span className="w-3 h-1 bg-[#0066FF] rounded-full" />
-                  <span>Effort restant réel</span>
+                <div className="flex items-center gap-1.5 text-red font-bold">
+                  <span className="w-3 h-1 bg-red rounded-full" />
+                  <span>Effort réel restant</span>
                 </div>
               </div>
             </div>
 
-            {/* Tracé SVG Responsive de la courbe Burndown */}
-            <div className="h-44 w-full bg-slate-50/50 dark:bg-slate-900/40 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
+            {/* Tracé SVG Responsive Conforme Section 10 */}
+            <div className="h-44 w-full bg-black rounded-[4px] p-3 border border-[#242424]">
               <svg className="w-full h-full overflow-visible" viewBox="0 0 600 120">
-                {/* Lignes de repère horizontales */}
-                <line x1="40" y1="20" x2="580" y2="20" stroke="#E2E8F0" strokeDasharray="3 3" />
-                <line x1="40" y1="60" x2="580" y2="60" stroke="#E2E8F0" strokeDasharray="3 3" />
-                <line x1="40" y1="100" x2="580" y2="100" stroke="#94A3B8" strokeWidth="1" />
+                {/* Grille : pointillés rgba(255,255,255,0.08) */}
+                <line x1="40" y1="20" x2="580" y2="20" stroke="rgba(255,255,255,0.08)" strokeDasharray="3 3" />
+                <line x1="40" y1="60" x2="580" y2="60" stroke="rgba(255,255,255,0.08)" strokeDasharray="3 3" />
+                <line x1="40" y1="100" x2="580" y2="100" stroke="#242424" strokeWidth="1" />
 
-                {/* Axe Y : Labels */}
-                <text x="10" y="24" fontSize="10" fill="#94A3B8" fontWeight="bold">{totalSprintPoints} SP</text>
-                <text x="10" y="64" fontSize="10" fill="#94A3B8">{Math.round(totalSprintPoints / 2)} SP</text>
-                <text x="15" y="104" fontSize="10" fill="#94A3B8">0 SP</text>
+                {/* Axe Y : Labels mono blanc 45% */}
+                <text x="10" y="24" fontSize="10" fill="rgba(255,255,255,0.45)" fontFamily="var(--font-mono)">{totalSprintPoints} SP</text>
+                <text x="10" y="64" fontSize="10" fill="rgba(255,255,255,0.45)" fontFamily="var(--font-mono)">{Math.round(totalSprintPoints / 2)} SP</text>
+                <text x="15" y="104" fontSize="10" fill="rgba(255,255,255,0.45)" fontFamily="var(--font-mono)">0 SP</text>
 
-                {/* Ligne Idéale : Diagonale de (40, 20) à (580, 100) */}
-                <line x1="40" y1="20" x2="580" y2="100" stroke="#94A3B8" strokeWidth="2" strokeDasharray="5 5" />
+                {/* 2e Série : Trajectoire idéale en blanc pointillé */}
+                <line x1="40" y1="20" x2="580" y2="100" stroke="#FFFFFF" strokeWidth="1.5" strokeDasharray="4 4" />
 
-                {/* Ligne Réalisée : tracé dynamique réel */}
+                {/* Courbe principale : Couleur primaire du thème avec halo drop-shadow */}
                 {burndownPoints.some(p => p.actualY !== null) && (
                   <polyline
                     fill="none"
-                    stroke="#0066FF"
-                    strokeWidth="3.5"
+                    stroke="var(--color-primary)"
+                    strokeWidth="2.5"
                     strokeLinecap="round"
                     strokeLinejoin="round"
+                    filter="drop-shadow(0 0 6px var(--color-primary))"
                     points={burndownPoints
                       .filter(p => p.actualY !== null)
                       .map(p => `${p.x},${p.actualY}`)
@@ -260,19 +253,19 @@ export function SprintsView() {
                   />
                 )}
 
-                {/* Points réels calculés */}
+                {/* Points pleins couleur primaire 4px */}
                 {burndownPoints
                   .filter(p => p.actualPoints !== null && p.actualY !== null)
                   .map((pt, idx) => (
                     <g key={idx}>
-                      <circle cx={pt.x} cy={pt.actualY!} r="5" fill="#FFFFFF" stroke="#0066FF" strokeWidth="3" />
-                      <text x={pt.x - 10} y={pt.actualY! - 9} fontSize="9" fontWeight="bold" fill="#0066FF">{pt.actualPoints} SP</text>
+                      <circle cx={pt.x} cy={pt.actualY!} r="4" fill="var(--color-primary)" stroke="#FFFFFF" strokeWidth="1.5" />
+                      <text x={pt.x - 10} y={pt.actualY! - 9} fontSize="9" fontWeight="bold" fill="var(--color-primary)" fontFamily="var(--font-mono)">{pt.actualPoints} SP</text>
                     </g>
                   ))}
 
                 {/* Axe X : Labels jours dynamiques */}
                 {burndownPoints.map((pt, idx) => (
-                  <text key={idx} x={pt.x} y="118" fontSize="10" fill="#64748B" fontWeight="600" textAnchor="middle">
+                  <text key={idx} x={pt.x} y="118" fontSize="10" fill="rgba(255,255,255,0.45)" fontFamily="var(--font-mono)" textAnchor="middle">
                     {pt.dayLabel}
                   </text>
                 ))}
@@ -283,47 +276,43 @@ export function SprintsView() {
           {/* Tableaux des tâches du sprint & Backlog */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             {/* Colonne gauche (2 tiers) : Tâches incluses dans le sprint */}
-            <div className="lg:col-span-2 bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40">
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Tâches engagées dans ce sprint ({sprintTasks.length})
-                </h4>
-              </div>
+            <div className="lg:col-span-2 panel space-y-4">
+              <h4 className="panel-title mb-0">
+                TÂCHES ENGAGÉES DANS CE SPRINT ({sprintTasks.length})
+              </h4>
 
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+              <div className="divide-y divide-[#242424]">
                 {sprintTasks.length === 0 ? (
-                  <div className="py-12 text-center text-slate-400 text-xs">
+                  <div className="table-empty">
                     Aucune tâche n'a encore été ajoutée à ce sprint.
                   </div>
                 ) : (
                   sprintTasks.map(t => (
-                    <div key={t.id} className="p-4 flex items-center justify-between gap-3 hover:bg-blue-50/20 dark:hover:bg-slate-800/40 transition">
+                    <div key={t.id} className="py-3 flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <select
                           value={t.status}
                           onChange={(e) => moveTaskStatus(t.id, e.target.value as TaskStatus)}
-                          className="px-2 py-1 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border-0"
+                          className="form-select py-1 px-2 text-micro w-auto uppercase font-bold"
                         >
-                          <option value="todo">À faire</option>
-                          <option value="in_progress">En cours</option>
-                          <option value="in_review">En revue</option>
-                          <option value="done">Terminé</option>
+                          <option value="todo">À FAIRE</option>
+                          <option value="in_progress">EN COURS</option>
+                          <option value="in_review">EN REVUE</option>
+                          <option value="done">TERMINÉ</option>
                         </select>
                         <div>
-                          <span className={`text-sm font-semibold ${t.status === 'done' ? 'line-through text-slate-400' : 'text-slate-900 dark:text-white'}`}>
+                          <span className={`text-xs font-bold uppercase tracking-wide ${t.status === 'done' ? 'line-through text-white/45' : 'text-white'}`}>
                             {t.title}
                           </span>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-blue-100 dark:bg-blue-950 text-[#0066FF] border border-blue-200 dark:border-blue-800">
+                        <span className="badge font-mono">
                           {getTaskPoints(t)} SP
                         </span>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                          t.priority === 'urgent' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-700'
-                        }`}>
-                          {t.priority}
+                        <span className={t.priority === 'urgent' ? 'badge badge--bad' : 'badge'}>
+                          {t.priority.toUpperCase()}
                         </span>
                       </div>
                     </div>
@@ -333,39 +322,39 @@ export function SprintsView() {
             </div>
 
             {/* Colonne droite (1 tiers) : Backlog & Ajout au sprint */}
-            <div className="bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40">
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Backlog Produit ({backlogTasks.length})
+            <div className="panel space-y-4">
+              <div className="border-b border-[#242424] pb-3">
+                <h4 className="panel-title mb-0">
+                  BACKLOG PRODUIT ({backlogTasks.length})
                 </h4>
-                <p className="text-[11px] text-slate-400 mt-0.5">Tâches en attente d'affectation</p>
+                <p className="text-micro text-white/45 mt-0.5">Tâches en attente d'affectation</p>
               </div>
 
-              <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-96 overflow-y-auto">
+              <div className="divide-y divide-[#242424] max-h-96 overflow-y-auto pr-1">
                 {backlogTasks.length === 0 ? (
-                  <div className="py-8 text-center text-slate-400 text-xs">
+                  <div className="table-empty py-8">
                     Le backlog est vide !
                   </div>
                 ) : (
                   backlogTasks.map(t => (
-                    <div key={t.id} className="p-3 flex items-center justify-between gap-2 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                    <div key={t.id} className="py-2.5 flex items-center justify-between gap-2">
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">
+                          <span className="text-xs font-bold text-white uppercase truncate">
                             {t.title}
                           </span>
-                          <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-blue-600">
+                          <span className="tag-mono text-[10px]">
                             {getTaskPoints(t)} SP
                           </span>
                         </div>
-                        <span className="text-[10px] text-slate-400">Échéance : {t.dueDate || 'N/A'}</span>
+                        <span className="text-micro font-mono text-white/45">ÉCHÉANCE : {t.dueDate || 'N/A'}</span>
                       </div>
                       <button
                         onClick={() => addTasksToSprint(activeSprint.id, [t.id])}
-                        className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-blue-50 text-[#0066FF] hover:bg-blue-100 transition whitespace-nowrap"
+                        className="btn btn-secondary btn-sm"
                         title="Ajouter à ce sprint"
                       >
-                        + Sprint
+                        + SPRINT
                       </button>
                     </div>
                   ))
@@ -378,15 +367,25 @@ export function SprintsView() {
 
       {/* Modale de Création de Sprint */}
       {showNewSprintModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-[#0F172A] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-md w-full p-6 animate-in fade-in zoom-in-95">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4">
-              Créer un nouveau Sprint
-            </h3>
+        <div className="modal-overlay" onClick={() => setShowNewSprintModal(false)} role="dialog" aria-modal="true">
+          <div className="modal modal--sm" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between pb-3 border-b border-[#242424] mb-4">
+              <h3 className="modal-title mb-0">
+                CRÉER UN NOUVEAU SPRINT
+              </h3>
+              <button
+                onClick={() => setShowNewSprintModal(false)}
+                className="btn btn-ghost btn-sm p-1"
+                aria-label="Fermer"
+              >
+                <X className="w-4 h-4 text-white/70" />
+              </button>
+            </div>
+
             <form onSubmit={handleCreateSprint} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                  Nom du Sprint
+              <div className="form-group mb-0">
+                <label className="form-label">
+                  Nom du Sprint <span className="req">*</span>
                 </label>
                 <input
                   type="text"
@@ -394,12 +393,12 @@ export function SprintsView() {
                   value={newSprintName}
                   onChange={(e) => setNewSprintName(e.target.value)}
                   placeholder="Ex : Sprint 3 — Intégrations API"
-                  className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                  className="form-input"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+              <div className="form-group mb-0">
+                <label className="form-label">
                   Objectif principal (Sprint Goal)
                 </label>
                 <textarea
@@ -407,13 +406,13 @@ export function SprintsView() {
                   value={newSprintGoal}
                   onChange={(e) => setNewSprintGoal(e.target.value)}
                   placeholder="Ex : Livrer la synchronisation des données et la facturation..."
-                  className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                  className="form-textarea"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+              <div className="form-row">
+                <div className="form-group mb-0">
+                  <label className="form-label">
                     Date de début
                   </label>
                   <input
@@ -421,12 +420,12 @@ export function SprintsView() {
                     required
                     value={newSprintStart}
                     onChange={(e) => setNewSprintStart(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                    className="form-input font-mono"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+                <div className="form-group mb-0">
+                  <label className="form-label">
                     Date de fin
                   </label>
                   <input
@@ -434,24 +433,24 @@ export function SprintsView() {
                     required
                     value={newSprintEnd}
                     onChange={(e) => setNewSprintEnd(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                    className="form-input font-mono"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <div className="modal-actions pt-4 border-t border-[#242424]">
                 <button
                   type="button"
                   onClick={() => setShowNewSprintModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+                  className="btn btn-secondary btn-sm"
                 >
-                  Annuler
+                  ANNULER
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-xs font-bold text-white bg-[#0066FF] hover:bg-blue-600 rounded-xl shadow-md"
+                  className="btn btn-primary btn-sm"
                 >
-                  Créer le sprint
+                  CRÉER LE SPRINT
                 </button>
               </div>
             </form>

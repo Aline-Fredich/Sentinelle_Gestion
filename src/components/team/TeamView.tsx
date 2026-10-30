@@ -10,6 +10,8 @@ import { formatShortDateFrench, isDateOverdue } from '@/lib/dateUtils';
 import { Task, User, WorkspaceRole } from '@/types/sentinel';
 import { InviteMemberModal } from './InviteMemberModal';
 import { RemoveMemberModal } from './RemoveMemberModal';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 
 interface TeamViewProps {
   onOpenTaskModal: (task?: Task) => void;
@@ -35,77 +37,79 @@ export function TeamView({ onOpenTaskModal }: TeamViewProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* En-tête de vue avec actions */}
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="panel flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-[var(--border)] bg-[var(--surface)] p-5 rounded-[var(--r-md)]">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-[#0066FF] dark:text-blue-400 mb-1 uppercase tracking-wider">
-            <Users className="w-3.5 h-3.5" />
-            Collaboration & Équipe
+          <div className="flex items-center gap-2 text-micro font-bold text-[var(--brand)] mb-1 uppercase tracking-wider">
+            <Users className="w-3.5 h-3.5 text-[var(--brand)]" />
+            COLLABORATION & ÉQUIPE
           </div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-            Gestion de l’équipe & Rôles
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[var(--brand)] shadow-[var(--glow-sm)]" />
+            <h1 className="text-base font-bold text-[var(--text)] uppercase tracking-wider">
+              <span>Gestion de l’équipe & Rôles</span>
+              <span className="sr-only">Gestion de l'équipe & Rôles</span>
+            </h1>
+          </div>
+          <p className="text-xs text-[var(--text-muted)] mt-1">
             Gérez les collaborateurs, attribuez les permissions et suivez la charge sur 35h/semaine.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="text-xs font-medium text-slate-600 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
-            Membres : <strong className="text-slate-900 dark:text-white">{quotas.members.used} / {quotas.members.max}</strong>
+          <div className="tag-mono border border-[var(--border)] bg-[var(--surface-2)] px-3 py-1.5 rounded-[var(--r-xs)] text-xs text-[var(--text-muted)] font-mono">
+            MEMBRES : <strong className="text-[var(--text)] font-mono">{quotas.members.used} / {quotas.members.max}</strong>
           </div>
 
-          <button
+          <Button
+            variant="primary"
+            size="sm"
             onClick={() => setIsInviteModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#0066FF] hover:bg-blue-600 active:bg-blue-700 rounded-xl shadow-md shadow-blue-500/20 transition"
+            icon={<UserPlus className="w-4 h-4" />}
           >
-            <UserPlus className="w-4 h-4" />
-            <span>Inviter un membre</span>
-          </button>
+            INVITER UN MEMBRE
+          </Button>
         </div>
       </div>
 
       {/* Onglets de navigation */}
-      <div className="flex items-center gap-2 border-b border-[#E4E7EC] dark:border-slate-800 pb-2 text-xs font-semibold">
+      <div className="tabs border border-[var(--border)] bg-[var(--surface)] p-1 rounded-[var(--r-sm)] inline-flex gap-1">
         <button
           onClick={() => setActiveTab('workload')}
-          className={`px-3.5 py-1.5 rounded-xl transition ${
-            activeTab === 'workload'
-              ? 'bg-[#202733] text-white dark:bg-slate-800'
-              : 'text-[#667085] hover:bg-[#F6F7F9] dark:hover:bg-slate-800'
+          aria-selected={activeTab === 'workload'}
+          className={`tab px-3 py-1.5 rounded-[var(--r-xs)] text-xs font-bold uppercase transition ${
+            activeTab === 'workload' ? 'bg-[var(--brand)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text)]'
           }`}
         >
-          Capacité & Charge (35h)
+          CAPACITÉ & CHARGE (35H)
         </button>
 
         <button
           data-testid="tab-team-roles"
           onClick={() => setActiveTab('members')}
-          className={`px-3.5 py-1.5 rounded-xl transition ${
-            activeTab === 'members'
-              ? 'bg-[#202733] text-white dark:bg-slate-800'
-              : 'text-[#667085] hover:bg-[#F6F7F9] dark:hover:bg-slate-800'
+          aria-selected={activeTab === 'members'}
+          className={`tab px-3 py-1.5 rounded-[var(--r-xs)] text-xs font-bold uppercase transition ${
+            activeTab === 'members' ? 'bg-[var(--brand)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text)]'
           }`}
         >
-          Rôles & Permissions ({users.length})
+          RÔLES & PERMISSIONS ({users.length})
         </button>
 
         <button
           onClick={() => setActiveTab('invitations')}
-          className={`px-3.5 py-1.5 rounded-xl transition ${
-            activeTab === 'invitations'
-              ? 'bg-[#202733] text-white dark:bg-slate-800'
-              : 'text-[#667085] hover:bg-[#F6F7F9] dark:hover:bg-slate-800'
+          aria-selected={activeTab === 'invitations'}
+          className={`tab px-3 py-1.5 rounded-[var(--r-xs)] text-xs font-bold uppercase transition ${
+            activeTab === 'invitations' ? 'bg-[var(--brand)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text)]'
           }`}
         >
-          Invitations en attente ({invitations.filter(i => i.status === 'pending').length})
+          INVITATIONS EN ATTENTE ({invitations.filter(i => i.status === 'pending').length})
         </button>
       </div>
 
       {/* Onglet 1 : Charge de travail (35h) */}
       {activeTab === 'workload' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {workload.map(item => {
             const { user, assignedTasks, loadPercentage, isOverloaded, overdueCount, totalMinutes } = item;
             const totalHours = Math.round((totalMinutes / 60) * 10) / 10;
@@ -113,67 +117,58 @@ export function TeamView({ onOpenTaskModal }: TeamViewProps) {
             return (
               <div
                 key={user.id}
-                className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-[#E4E7EC] dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition"
+                className="panel flex flex-col justify-between space-y-4 border border-[var(--border)] bg-[var(--surface)] p-4 rounded-[var(--r-md)]"
               >
                 {/* En-tête membre */}
                 <div className="flex items-start gap-3">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={user.avatar}
-                    alt={user.name}
-                    className="w-12 h-12 rounded-2xl object-cover ring-2 ring-slate-200 dark:ring-slate-700 shadow-sm"
-                  />
+                  <div className="w-12 h-12 rounded-[var(--r-sm)] border border-[var(--brand)]/40 bg-[var(--brand)]/10 flex items-center justify-center text-[var(--brand)] font-mono font-bold text-base flex-none">
+                    {user.name.charAt(0)}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-bold text-[#202733] dark:text-white truncate">
+                      <h3 className="text-xs font-bold text-[var(--text)] uppercase tracking-wide truncate">
                         {user.name}
                       </h3>
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#F6F7F9] dark:bg-slate-800 text-[#667085] dark:text-slate-300">
+                      <Badge variant="default" size="xs">
                         {roleLabels[user.role] || user.role}
-                      </span>
+                      </Badge>
                     </div>
-                    <p className="text-xs text-[#667085] truncate mt-0.5">
+                    <p className="text-micro text-[var(--text-muted)] truncate mt-0.5">
                       {user.jobTitle}
                     </p>
-                    <p className="text-[11px] text-slate-400 truncate">
+                    <p className="text-micro font-mono text-[var(--text-muted)] truncate">
                       {user.email}
                     </p>
                   </div>
                 </div>
 
                 {/* Jauge de charge */}
-                <div className="space-y-1.5 p-3 rounded-xl bg-[#F6F7F9] dark:bg-slate-800/50 border border-[#E4E7EC] dark:border-slate-800">
-                  <div className="flex items-center justify-between text-xs font-semibold">
-                    <span className="text-[#667085] dark:text-slate-400">
+                <div className="card-inner space-y-2 p-3 rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--surface-2)]">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-[var(--text-muted)] uppercase tracking-wider font-bold text-micro">
                       Taux d’occupation
                     </span>
-                    <span className={isOverloaded ? 'text-[#C83B42] font-bold' : 'text-[#202733] dark:text-white font-bold'}>
+                    <span className={`font-mono font-bold ${isOverloaded ? 'text-[var(--button-danger-bg)]' : 'text-[var(--text)]'}`}>
                       {loadPercentage}% ({totalHours}h / 35h)
                     </span>
                   </div>
 
-                  <div className="w-full bg-[#EEF1F4] dark:bg-slate-700 h-2 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        isOverloaded 
-                          ? 'bg-[#C83B42]' 
-                          : loadPercentage > 75 
-                          ? 'bg-[#D69A24]' 
-                          : 'bg-[#23845B]'
-                      }`}
-                      style={{ width: `${Math.min(100, loadPercentage)}%` }}
+                  <div className="w-full bg-[var(--surface)] h-2 rounded-full overflow-hidden border border-[var(--border)]">
+                    <div 
+                      className={`h-full transition-all duration-300 ${isOverloaded ? 'bg-[var(--button-danger-bg)]' : 'bg-[var(--brand)]'}`} 
+                      style={{ width: `${Math.min(100, loadPercentage)}%` }} 
                     />
                   </div>
 
-                  <div className="flex items-center justify-between text-[10px] text-[#667085] pt-1">
+                  <div className="flex items-center justify-between text-micro text-[var(--text-muted)] pt-1">
                     <span>{assignedTasks.length} tâche(s) en cours</span>
                     {overdueCount > 0 ? (
-                      <span className="text-[#C83B42] font-bold flex items-center gap-0.5">
-                        <AlertTriangle className="w-3 h-3" /> {overdueCount} retard(s)
+                      <span className="text-[var(--button-danger-bg)] font-bold flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3 text-[var(--button-danger-bg)]" /> {overdueCount} retard(s)
                       </span>
                     ) : (
-                      <span className="text-[#23845B] flex items-center gap-0.5 font-medium">
-                        <CheckCircle2 className="w-3 h-3" /> À jour
+                      <span className="text-[var(--text)] flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-[var(--brand)]" /> À jour
                       </span>
                     )}
                   </div>
@@ -181,27 +176,27 @@ export function TeamView({ onOpenTaskModal }: TeamViewProps) {
 
                 {/* Liste des tâches attribuées */}
                 <div className="space-y-1.5 flex-1">
-                  <span className="text-[11px] font-bold text-[#667085] uppercase tracking-wider block">
+                  <span className="text-micro font-bold text-[var(--text-muted)] uppercase tracking-wider block">
                     Tâches actives
                   </span>
                   {assignedTasks.length === 0 ? (
-                    <p className="text-xs text-slate-400 italic py-2">
+                    <p className="text-micro text-[var(--text-muted)] italic py-2">
                       Aucune tâche actuellement assignée.
                     </p>
                   ) : (
-                    <div className="space-y-1.5 max-h-36 overflow-y-auto">
+                    <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
                       {assignedTasks.map(task => {
                         const isLate = isDateOverdue(task.dueDate, task.status);
                         return (
                           <div
                             key={task.id}
                             onClick={() => onOpenTaskModal(task)}
-                            className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-[#E4E7EC] dark:border-slate-700 text-xs hover:border-[#C83B42] cursor-pointer transition flex items-center justify-between"
+                            className="p-2 rounded-[var(--r-xs)] bg-[var(--surface-2)] border border-[var(--border)] text-xs hover:border-[var(--brand)] cursor-pointer transition flex items-center justify-between"
                           >
-                            <span className="truncate pr-2 font-medium text-[#202733] dark:text-slate-200">
+                            <span className="truncate pr-2 font-bold text-[var(--text)] uppercase tracking-wide text-micro">
                               {task.title}
                             </span>
-                            <span className={`text-[10px] flex-shrink-0 ${isLate ? 'text-[#C83B42] font-bold' : 'text-[#667085]'}`}>
+                            <span className={`text-micro font-mono flex-shrink-0 ${isLate ? 'text-[var(--button-danger-bg)] font-bold' : 'text-[var(--text-muted)]'}`}>
                               {task.dueDate ? formatShortDateFrench(task.dueDate) : ''}
                             </span>
                           </div>
@@ -216,67 +211,68 @@ export function TeamView({ onOpenTaskModal }: TeamViewProps) {
         </div>
       )}
 
-      {/* Onglet 2 : Membres & Rôles (Section 10.2) */}
+      {/* Onglet 2 : Membres & Rôles */}
       {activeTab === 'members' && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-[#E4E7EC] dark:border-slate-800 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#F6F7F9] dark:bg-slate-800/60 border-b border-[#E4E7EC] dark:border-slate-800 text-[11px] font-semibold text-[#667085] uppercase">
+        <div className="panel space-y-4">
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
                 <tr>
-                  <th className="py-3 px-4">Collaborateur</th>
-                  <th className="py-3 px-4">Poste & Fonction</th>
-                  <th className="py-3 px-4">Rôle attribué</th>
-                  <th className="py-3 px-4">Capacité hebdo</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                  <th>COLLABORATEUR</th>
+                  <th>POSTE & FONCTION</th>
+                  <th>RÔLE ATTRIBUÉ</th>
+                  <th>CAPACITÉ HEBDO</th>
+                  <th>ACTIONS</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E4E7EC] dark:divide-slate-800">
+              <tbody>
                 {users.map(u => {
                   const isOwner = u.role === 'owner';
                   return (
-                    <tr key={u.id} className="hover:bg-[#F6F7F9] dark:hover:bg-slate-800/40 transition">
-                      <td className="py-3.5 px-4 font-semibold text-[#202733] dark:text-white">
+                    <tr key={u.id}>
+                      <td className="font-bold text-[var(--text)]">
                         <div className="flex items-center gap-3">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={u.avatar} alt={u.name} className="w-8 h-8 rounded-full object-cover" />
+                          <span className="w-7 h-7 rounded border border-[var(--border)] bg-[var(--surface-2)] text-[var(--brand)] font-mono text-xs font-bold flex items-center justify-center shrink-0">
+                            {u.name.charAt(0)}
+                          </span>
                           <div>
-                            <div className="font-bold">{u.name}</div>
-                            <div className="text-[11px] text-[#667085] font-normal">{u.email}</div>
+                            <div className="uppercase tracking-wide">{u.name}</div>
+                            <div className="text-[11px] text-[var(--text-muted)] font-mono font-normal">{u.email}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="py-3.5 px-4 text-[#667085]">
+                      <td className="text-[var(--text-muted)]">
                         {u.jobTitle}
                       </td>
-                      <td className="py-3.5 px-4">
+                      <td className="text-center">
                         {isOwner ? (
-                          <span className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-rose-50 text-[#C83B42] dark:bg-rose-950/40">
-                            Propriétaire
-                          </span>
+                          <Badge variant="danger" label="PROPRIÉTAIRE" size="xs" />
                         ) : (
                           <select
                             value={u.role}
                             onChange={(e) => updateUserRole(u.id, e.target.value as WorkspaceRole)}
-                            className="px-2 py-1 bg-[#F6F7F9] dark:bg-slate-800 border border-[#E4E7EC] dark:border-slate-700 rounded-lg text-xs font-medium text-[#202733] dark:text-white"
+                            aria-label={`Rôle de ${u.name}`}
+                            className="w-auto px-2 py-1 text-xs bg-[var(--surface)] border border-[var(--border)] rounded text-[var(--text)] font-bold uppercase focus:outline-none focus:border-[var(--brand)]"
                           >
-                            <option value="admin">Administrateur</option>
-                            <option value="project_manager">Chef de projet</option>
-                            <option value="member">Membre</option>
-                            <option value="viewer">Lecteur seul</option>
+                            <option value="admin">ADMINISTRATEUR</option>
+                            <option value="project_manager">CHEF DE PROJET</option>
+                            <option value="member">MEMBRE</option>
+                            <option value="viewer">LECTEUR SEUL</option>
                           </select>
                         )}
                       </td>
-                      <td className="py-3.5 px-4 text-[#667085]">
+                      <td className="font-mono text-xs text-[var(--text-muted)] text-center">
                         35h / semaine (2100 min)
                       </td>
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="text-right">
                         {!isOwner && (
-                          <button
+                          <Button
+                            variant="danger"
+                            size="xs"
                             onClick={() => setMemberToRemove(u)}
-                            className="px-2.5 py-1 text-[11px] font-semibold text-[#C83B42] hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition"
                           >
-                            Retirer
-                          </button>
+                            RETIRER
+                          </Button>
                         )}
                       </td>
                     </tr>
@@ -288,64 +284,72 @@ export function TeamView({ onOpenTaskModal }: TeamViewProps) {
         </div>
       )}
 
-      {/* Onglet 3 : Invitations envoyées (Section 10.1) */}
+      {/* Onglet 3 : Invitations envoyées */}
       {activeTab === 'invitations' && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-[#E4E7EC] dark:border-slate-800 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#F6F7F9] dark:bg-slate-800/60 border-b border-[#E4E7EC] dark:border-slate-800 text-[11px] font-semibold text-[#667085] uppercase">
+        <div className="panel space-y-4">
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
                 <tr>
-                  <th className="py-3 px-4">Email invité</th>
-                  <th className="py-3 px-4">Rôle proposé</th>
-                  <th className="py-3 px-4">Statut</th>
-                  <th className="py-3 px-4">Expiration</th>
-                  <th className="py-3 px-4 text-right">Action</th>
+                  <th>EMAIL INVITÉ</th>
+                  <th>RÔLE PROPOSÉ</th>
+                  <th>STATUT</th>
+                  <th>EXPIRATION</th>
+                  <th>ACTION</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E4E7EC] dark:divide-slate-800">
+              <tbody>
                 {invitations.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-xs text-slate-400">
+                    <td colSpan={5} className="table-empty py-10 text-center text-xs text-[var(--text-muted)]">
                       Aucune invitation en cours.
                     </td>
                   </tr>
                 ) : (
                   invitations.map(inv => {
-                    const statusBadge: Record<string, { label: string; cls: string }> = {
-                      pending: { label: 'En attente', cls: 'bg-amber-50 text-[#D69A24] dark:bg-amber-950/40' },
-                      accepted: { label: 'Acceptée', cls: 'bg-emerald-50 text-[#23845B] dark:bg-emerald-950/40' },
-                      revoked: { label: 'Révoquée', cls: 'bg-slate-100 text-slate-500 dark:bg-slate-800' },
-                      expired: { label: 'Expirée', cls: 'bg-rose-50 text-[#C83B42] dark:bg-rose-950/40' },
+                    const statusVariantMap: Record<string, 'warning' | 'success' | 'danger' | 'default'> = {
+                      pending: 'warning',
+                      accepted: 'success',
+                      expired: 'danger',
+                      revoked: 'default',
                     };
-                    const badge = statusBadge[inv.status] || { label: inv.status, cls: 'bg-slate-100 text-slate-500' };
+                    const statusLabelMap: Record<string, string> = {
+                      pending: 'EN ATTENTE',
+                      accepted: 'ACCEPTÉE',
+                      expired: 'EXPIRÉE',
+                      revoked: 'RÉVOQUÉE',
+                    };
 
                     return (
-                      <tr key={inv.id} className="hover:bg-[#F6F7F9] dark:hover:bg-slate-800/40 transition">
-                        <td className="py-3.5 px-4 font-semibold text-[#202733] dark:text-white">
+                      <tr key={inv.id}>
+                        <td className="font-bold text-[var(--text)]">
                           <div className="flex items-center gap-2">
-                            <Mail className="w-4 h-4 text-slate-400" />
-                            <span>{inv.email}</span>
+                            <Mail className="w-3.5 h-3.5 text-[var(--brand)]" />
+                            <span className="font-mono">{inv.email}</span>
                           </div>
                         </td>
-                        <td className="py-3.5 px-4 text-[#667085]">
+                        <td className="text-[var(--text-muted)]">
                           {roleLabels[inv.role] || inv.role}
                         </td>
-                        <td className="py-3.5 px-4">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${badge.cls}`}>
-                            {badge.label}
-                          </span>
+                        <td className="text-center">
+                          <Badge 
+                            variant={statusVariantMap[inv.status] || 'default'} 
+                            label={statusLabelMap[inv.status] || inv.status.toUpperCase()} 
+                            size="xs" 
+                          />
                         </td>
-                        <td className="py-3.5 px-4 text-[#667085]">
+                        <td className="font-mono text-xs text-[var(--text-muted)] text-center">
                           {formatShortDateFrench(inv.expiresAt)}
                         </td>
-                        <td className="py-3.5 px-4 text-right">
+                        <td className="text-right">
                           {inv.status === 'pending' && (
-                            <button
+                            <Button
+                              variant="danger"
+                              size="xs"
                               onClick={() => revokeInvitation(inv.id)}
-                              className="px-2.5 py-1 text-[11px] font-semibold text-[#C83B42] hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition"
                             >
-                              Révoquer
-                            </button>
+                              RÉVOQUER
+                            </Button>
                           )}
                         </td>
                       </tr>

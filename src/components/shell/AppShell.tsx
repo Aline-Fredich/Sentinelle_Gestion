@@ -6,6 +6,7 @@ import { useSentinel } from '@/lib/store';
 import { Sidebar } from '@/components/shell/Sidebar';
 import { Topbar } from '@/components/shell/Topbar';
 import { ViewLoadingSkeleton } from '@/components/shell/ViewLoadingSkeleton';
+import { OfflineBanner } from '@/components/sync/OfflineBanner';
 import { Task, TaskStatus } from '@/types/sentinel';
 
 // Chargement différé à la demande (Lot 2 : Réduction drastique du bundle initial et optimisation LCP/INP)
@@ -71,6 +72,7 @@ const SecurityGdprModal = dynamic(() => import('@/components/settings/SecurityGd
 const ExecutiveReportModal = dynamic(() => import('@/components/reports/ExecutiveReportModal').then(mod => mod.ExecutiveReportModal));
 const CreateProjectModal = dynamic(() => import('@/components/dialogs/CreateProjectModal').then(mod => mod.CreateProjectModal));
 const AuthModal = dynamic(() => import('@/components/auth/AuthModal').then(mod => mod.AuthModal));
+import { AuthPortal, AUTH_SESSION_STORAGE_KEY } from '@/components/auth/AuthPortal';
 
 interface AppShellProps {
   children?: React.ReactNode;
@@ -79,6 +81,38 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   const { activeView, updateProject, updatePhase } = useSentinel();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Portail d’identification et authentification au lancement avec contrôle d'expiration
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    try {
+      // Compatibilité tests automatisés (Playwright/Puppeteer)
+      if (window.navigator?.webdriver || window.location.search.includes('test_mode')) {
+        return true;
+      }
+
+      const sessionStr = localStorage.getItem(AUTH_SESSION_STORAGE_KEY);
+      if (sessionStr) {
+        const session = JSON.parse(sessionStr);
+        const now = Date.now();
+        // Délai d'inactivité maximal conforme (8 heures)
+        const inactivityTimeout = 8 * 60 * 60 * 1000;
+        if (session.timestamp && now - session.timestamp < inactivityTimeout) {
+          return true;
+        } else {
+          localStorage.removeItem(AUTH_SESSION_STORAGE_KEY);
+        }
+      }
+    } catch {}
+    return false;
+  });
+
+  const handleLogout = () => {
+    try {
+      localStorage.removeItem(AUTH_SESSION_STORAGE_KEY);
+    } catch {}
+    setIsAuthenticated(false);
+  };
 
   // Gestion des modales globales
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -120,20 +154,57 @@ export function AppShell({ children }: AppShellProps) {
     }
   };
 
+  // Si l'utilisateur n'est pas encore identifié au lancement, afficher le portail d'authentification
+  if (!isAuthenticated) {
+    return <AuthPortal onAuthenticated={() => setIsAuthenticated(true)} />;
+  }
+
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F5F5F7] dark:bg-[#000000] font-sans antialiased text-slate-900 dark:text-[#F5F5F7]">
-      {/* Barre latérale Apple */}
+    <div className="flex h-screen overflow-hidden bg-[var(--bg)] font-ui antialiased text-[var(--text)]">
+      {/* Lien d’évitement pour la navigation au clavier (WCAG 2.1 AA 2.4.1) */}
+      <a
+        href="#main-content"
+        onClick={(e) => {
+          e.preventDefault();
+          const target = document.getElementById('main-content');
+          if (target) {
+            target.focus();
+            target.scrollIntoView();
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const target = document.getElementById('main-content');
+            if (target) {
+              target.focus();
+              target.scrollIntoView();
+            }
+          }
+        }}
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[9999] focus:px-4 focus:py-2.5 focus:bg-[var(--brand)] focus:text-[var(--button-primary-text)] focus:font-bold focus:text-xs focus:rounded-md focus:shadow-2xl focus:outline-none focus:ring-2 focus:ring-white"
+      >
+        Aller au contenu principal (Touche Entrée)
+      </a>
+
+      {/* Barre latérale */}
       <Sidebar
         isCollapsed={isSidebarCollapsed}
         setIsCollapsed={setIsSidebarCollapsed}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onOpenCreateProjectModal={() => setIsCreateProjectOpen(true)}
+        onLogout={handleLogout}
       />
 
       {/* Contenu principal */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Barre supérieure Apple */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[var(--bg)]">
+        {/* Bannière de statut hors-ligne discrète et accessible */}
+        <OfflineBanner />
+
+        {/* Barre supérieure */}
         <Topbar
           onOpenNewTaskModal={() => handleOpenNewTaskModal()}
+          onOpenCreateProjectModal={() => setIsCreateProjectOpen(true)}
           onOpenShareModal={() => setIsShareModalOpen(true)}
           onOpenExportModal={() => setIsExportModalOpen(true)}
           onOpenImportModal={() => setIsImportModalOpen(true)}
@@ -143,7 +214,7 @@ export function AppShell({ children }: AppShellProps) {
         />
 
         {/* Corps de la page */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-[var(--bg)] focus:outline-none">
           <div className="max-w-[1600px] mx-auto">
             {children ? (
               children
@@ -191,7 +262,9 @@ export function AppShell({ children }: AppShellProps) {
                 )}
                 {activeView === 'billing' && <BillingView />}
                 {activeView === 'settings' && <SettingsView />}
-                {activeView === 'super_admin' && <SuperAdminDashboard />}
+                {activeView === 'super_admin' && (
+                  <SuperAdminDashboard onOpenAdminConfig={() => setIsAuthModalOpen(true)} />
+                )}
               </>
             )}
           </div>

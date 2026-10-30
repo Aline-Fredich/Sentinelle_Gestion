@@ -1,16 +1,19 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { 
-  CheckCircle2, Clock, AlertTriangle, ArrowUpRight, 
-  Calendar, CheckSquare, Users, BarChart3, Plus, 
-  TrendingUp, Shield, Layers, Eye, ChevronRight, Activity, Filter, FolderPlus
+  CheckCircle2, Clock, AlertTriangle, 
+  Calendar, CheckSquare, Plus, 
+  TrendingUp, Layers, ChevronRight, Activity, FolderPlus
 } from 'lucide-react';
 import { useSentinel } from '@/lib/store';
 import { Task, TaskStatus } from '@/types/sentinel';
 import { formatDayMonthFrench, formatRelativeTimeFrench, isDateOverdue } from '@/lib/dateUtils';
 import confetti from 'canvas-confetti';
 import { OnboardingBanner } from '@/components/onboarding/OnboardingBanner';
+import { Badge } from '@/components/ui/Badge';
+import { getPriorityBadgeVariant, getStatusBadgeVariant } from '@/components/ui/badgeTokens';
+import { Button } from '@/components/ui/Button';
 
 interface OverviewDashboardProps {
   onOpenTaskModal: (task?: Task, defaultStatus?: TaskStatus) => void;
@@ -25,20 +28,13 @@ export function OverviewDashboard({ onOpenTaskModal, onOpenCreateProjectModal }:
     activeProjectId, setActiveProjectId, setActiveView
   } = useSentinel();
 
-  const [activeTab, setActiveTab] = useState<'watch' | 'activity' | 'upcoming'>('watch');
-
   // Prénom de l'utilisateur
   const firstName = currentUser.name.split(' ')[0] || 'Responsable';
 
-  // Tâches à surveiller (Section 7.4) : En retard ou Urgentes
+  // Tâches à surveiller : En retard ou Urgentes
   const watchTasks = filteredTasks.filter(t => {
     return t.status !== 'done' && (isDateOverdue(t.dueDate, t.status) || t.priority === 'urgent' || t.priority === 'high');
   }).slice(0, 8);
-
-  // Prochaines échéances des 7 jours
-  const upcoming7DaysTasks = filteredTasks.filter(t => {
-    return t.status !== 'done' && Boolean(t.dueDate);
-  }).slice(0, 6);
 
   const handleToggleTaskDone = (task: Task) => {
     const nextStatus = task.status === 'done' ? 'todo' : 'done';
@@ -56,18 +52,18 @@ export function OverviewDashboard({ onOpenTaskModal, onOpenCreateProjectModal }:
     <div className="space-y-7">
       <OnboardingBanner />
 
-      {/* 7.1 En-tête personnalisé et contextuel Apple */}
-      <div className="p-7 rounded-3xl apple-card shadow-[0_4px_24px_rgba(0,0,0,0.04)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      {/* 7.1 En-tête personnalisé et contextuel */}
+      <div className="panel panel--hero flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-[var(--border)] bg-[var(--surface)] p-6 rounded-[var(--r-md)]">
         <div>
-          <div className="flex items-center gap-2 text-xs font-bold text-[#0071E3] dark:text-[#2997FF] mb-1 uppercase tracking-wider">
-            <span className="w-2 h-2 rounded-full bg-[#0071E3] animate-pulse" />
+          <div className="flex items-center gap-2 text-xs font-bold text-[var(--brand)] mb-1 uppercase tracking-wider font-mono">
+            <span className="w-2 h-2 rounded-full bg-[var(--brand)] shadow-[var(--glow-sm)] animate-pulse" />
             Tableau de bord de pilotage • SENTINEL GESTION
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-            Bonjour, {firstName} 👋
+          <h1 className="text-xl sm:text-2xl font-bold text-[var(--text)] tracking-tight font-ui">
+            BONJOUR, {firstName.toUpperCase()}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Voici la synthèse opérationnelle de vos projets et les priorités méritant votre attention.
+          <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1 font-ui">
+            Synthèse opérationnelle de vos projets et priorités de la console Sentinelle.
           </p>
         </div>
 
@@ -75,7 +71,7 @@ export function OverviewDashboard({ onOpenTaskModal, onOpenCreateProjectModal }:
           <select
             value={activeProjectId}
             onChange={(e) => setActiveProjectId(e.target.value)}
-            className="apple-input text-xs font-semibold"
+            className="form-select text-xs font-semibold py-1.5 px-3 rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--surface-2)] text-[var(--text)]"
           >
             <option value="all">Périmètre : Tous les projets</option>
             {projects.map(p => (
@@ -86,114 +82,136 @@ export function OverviewDashboard({ onOpenTaskModal, onOpenCreateProjectModal }:
           </select>
 
           {onOpenCreateProjectModal && (
-            <button
-              type="button"
+            <Button
+              variant="secondary"
+              size="sm"
               data-testid="btn-new-project"
               onClick={onOpenCreateProjectModal}
-              className="apple-btn-secondary text-xs"
+              icon={<FolderPlus className="w-3.5 h-3.5 text-[var(--brand)]" />}
             >
-              <FolderPlus className="w-3.5 h-3.5 text-[#0071E3]" />
-              <span>Nouveau projet</span>
-            </button>
+              Nouveau projet
+            </Button>
           )}
 
-          <button
+          <Button
+            variant="primary"
+            size="sm"
+            data-testid="btn-new-task"
             onClick={() => onOpenTaskModal(undefined, 'todo')}
-            className="apple-btn-primary text-xs"
+            icon={<Plus className="w-3.5 h-3.5" />}
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Nouvelle tâche</span>
-          </button>
+            Ajouter une tâche
+          </Button>
         </div>
       </div>
 
-      {/* 7.2 Cartes de synthèse (6 indicateurs vérifiés) */}
+      {/* 7.2 Cartes de synthèse (6 indicateurs KPI stricts) */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
         {/* 1. Projets Actifs */}
-        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-[#E4E7EC] dark:border-slate-800 shadow-sm hover:border-slate-300 transition">
-          <div className="flex items-center justify-between text-xs font-semibold text-[#667085] dark:text-slate-400">
-            <span>Projets actifs</span>
-            <Layers className="w-3.5 h-3.5 text-blue-600" />
+        <div className="panel kpi p-4 rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--surface)]">
+          <div className="kpi-head flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Projets actifs</span>
+            <div className="w-7 h-7 rounded-[var(--r-xs)] border border-[var(--border)] bg-[var(--surface-2)] flex items-center justify-center text-[var(--brand)]">
+              <Layers className="w-4 h-4" />
+            </div>
           </div>
-          <div className="mt-2 text-2xl font-black text-[#202733] dark:text-white">
+          <div className="text-2xl font-bold text-[var(--text)] font-mono">
             {metrics.activeProjectsCount}
           </div>
-          <div className="mt-1 text-[11px] text-[#667085]">
-            sur {projects.length} projet(s) au total
+          <div className="text-[11px] text-[var(--text-muted)] font-mono mt-1">
+            sur {projects.length} total
           </div>
         </div>
 
         {/* 2. Tâches ouvertes */}
-        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-[#E4E7EC] dark:border-slate-800 shadow-sm hover:border-slate-300 transition">
-          <div className="flex items-center justify-between text-xs font-semibold text-[#667085] dark:text-slate-400">
-            <span>Tâches ouvertes</span>
-            <Clock className="w-3.5 h-3.5 text-[#0066FF]" />
+        <div className="panel kpi p-4 rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--surface)]">
+          <div className="kpi-head flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Tâches ouvertes</span>
+            <div className="w-7 h-7 rounded-[var(--r-xs)] border border-[var(--border)] bg-[var(--surface-2)] flex items-center justify-center text-[var(--brand)]">
+              <Clock className="w-4 h-4" />
+            </div>
           </div>
-          <div className="mt-2 text-2xl font-black text-[#202733] dark:text-white">
+          <div className="text-2xl font-bold text-[var(--text)] font-mono">
             {metrics.openTasksCount}
           </div>
-          <div className="mt-1 text-xs text-[#0066FF] dark:text-cyan-400 font-medium">
-            {metrics.inProgress} en cours d’exécution
+          <div className="text-[11px] text-[var(--text-muted)] font-mono mt-1">
+            {metrics.inProgress} en cours
           </div>
         </div>
 
         {/* 3. Tâches terminées */}
-        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-[#E4E7EC] dark:border-slate-800 shadow-sm hover:border-slate-300 transition">
-          <div className="flex items-center justify-between text-xs font-semibold text-[#667085] dark:text-slate-400">
-            <span>Terminées</span>
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+        <div className="panel kpi p-4 rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--surface)]">
+          <div className="kpi-head flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Terminées</span>
+            <div className="w-7 h-7 rounded-[var(--r-xs)] border border-[var(--border)] bg-[var(--surface-2)] flex items-center justify-center text-[var(--brand)]">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
           </div>
-          <div className="mt-2 text-2xl font-black text-[#23845B] dark:text-emerald-400">
+          <div className="text-2xl font-bold text-[var(--text)] font-mono">
             {metrics.completed}
           </div>
-          <div className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+          <div className="text-[11px] text-[var(--text-muted)] font-mono mt-1">
             Livrables validés
           </div>
         </div>
 
         {/* 4. Tâches en retard */}
-        <div className={`p-4 rounded-xl bg-white dark:bg-slate-900 border shadow-sm transition ${
-          metrics.overdue > 0 ? 'border-rose-200 bg-rose-50/20 dark:border-rose-900/50' : 'border-[#E4E7EC] dark:border-slate-800'
+        <div className={`panel kpi p-4 rounded-[var(--r-sm)] border bg-[var(--surface)] ${
+          metrics.overdue > 0 
+            ? 'border-[var(--button-danger-bg)] shadow-[0_0_12px_rgba(255,0,0,0.2)]' 
+            : 'border-[var(--border)]'
         }`}>
-          <div className="flex items-center justify-between text-xs font-semibold text-[#667085] dark:text-slate-400">
-            <span>En retard</span>
-            <AlertTriangle className={`w-3.5 h-3.5 ${metrics.overdue > 0 ? 'text-[#C83B42]' : 'text-slate-400'}`} />
+          <div className="kpi-head flex items-center justify-between mb-2">
+            <span className={`text-xs font-semibold uppercase tracking-wider ${metrics.overdue > 0 ? 'text-[var(--button-danger-bg)]' : 'text-[var(--text-muted)]'}`}>
+              En retard
+            </span>
+            <div className={`w-7 h-7 rounded-[var(--r-xs)] border flex items-center justify-center ${
+              metrics.overdue > 0 
+                ? 'border-[var(--button-danger-bg)]/40 bg-[var(--button-danger-bg)]/15 text-[var(--button-danger-bg)]' 
+                : 'border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-muted)]'
+            }`}>
+              <AlertTriangle className="w-4 h-4" />
+            </div>
           </div>
-          <div className={`mt-2 text-2xl font-black ${metrics.overdue > 0 ? 'text-[#C83B42]' : 'text-slate-700 dark:text-slate-300'}`}>
+          <div className={`text-2xl font-bold font-mono ${metrics.overdue > 0 ? 'text-[var(--button-danger-bg)]' : 'text-[var(--text)]'}`}>
             {metrics.overdue}
           </div>
-          <div className="mt-1 text-[11px] text-[#C83B42] font-semibold">
+          <div className={`text-[11px] font-mono mt-1 ${metrics.overdue > 0 ? 'text-[var(--button-danger-bg)] font-bold' : 'text-[var(--text-muted)]'}`}>
             {metrics.overdue > 0 ? 'Action requise' : 'Aucun retard'}
           </div>
         </div>
 
         {/* 5. Échéances 7 jours */}
-        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-[#E4E7EC] dark:border-slate-800 shadow-sm hover:border-slate-300 transition">
-          <div className="flex items-center justify-between text-xs font-semibold text-[#667085] dark:text-slate-400">
-            <span>Échéances 7j</span>
-            <Calendar className="w-3.5 h-3.5 text-amber-600" />
+        <div className="panel kpi p-4 rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--surface)]">
+          <div className="kpi-head flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Échéances 7j</span>
+            <div className="w-7 h-7 rounded-[var(--r-xs)] border border-[var(--border)] bg-[var(--surface-2)] flex items-center justify-center text-[var(--brand)]">
+              <Calendar className="w-4 h-4" />
+            </div>
           </div>
-          <div className="mt-2 text-2xl font-black text-[#D69A24]">
+          <div className="text-2xl font-bold text-[var(--text)] font-mono">
             {metrics.upcoming7DaysCount}
           </div>
-          <div className="mt-1 text-[11px] text-[#667085]">
-            jalons programmés
+          <div className="text-[11px] text-[var(--text-muted)] font-mono mt-1">
+            Jalons cibles
           </div>
         </div>
 
         {/* 6. Avancement moyen */}
-        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-[#E4E7EC] dark:border-slate-800 shadow-sm hover:border-slate-300 transition">
-          <div className="flex items-center justify-between text-xs font-semibold text-[#667085] dark:text-slate-400">
-            <span>Avancement moy.</span>
-            <TrendingUp className="w-3.5 h-3.5 text-[#3478C8]" />
+        <div className="panel kpi p-4 rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--surface)]">
+          <div className="kpi-head flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Avancement</span>
+            <div className="w-7 h-7 rounded-[var(--r-xs)] border border-[var(--border)] bg-[var(--surface-2)] flex items-center justify-center text-[var(--brand)]">
+              <TrendingUp className="w-4 h-4" />
+            </div>
           </div>
-          <div className="mt-2 text-2xl font-black text-[#202733] dark:text-white">
+          <div className="text-2xl font-bold text-[var(--text)] font-mono">
             {metrics.averageProjectProgress}%
           </div>
-          <div className="mt-1.5 w-full bg-[#EEF1F4] dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+          <div className="w-full bg-[var(--surface-2)] h-1.5 rounded-full overflow-hidden border border-[var(--border)] mt-2">
             <div 
-              className="bg-[#23845B] h-full rounded-full transition-all duration-500"
-              style={{ width: `${metrics.averageProjectProgress}%` }}
+              className="h-full bg-[var(--brand)] transition-all duration-300" 
+              style={{ width: `${metrics.averageProjectProgress}%` }} 
             />
           </div>
         </div>
@@ -201,25 +219,25 @@ export function OverviewDashboard({ onOpenTaskModal, onOpenCreateProjectModal }:
 
       {/* 7.3 Graphiques historiques en bâtons et Avancement réel comparé */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Graphique A : Tâches créées vs terminées (bâtons comparatifs) */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-[#E4E7EC] dark:border-slate-800 shadow-sm flex flex-col justify-between">
+        {/* Graphique A : Tâches créées vs terminées */}
+        <div className="panel flex flex-col justify-between border border-[var(--border)] bg-[var(--surface)] p-5 rounded-[var(--r-md)]">
           <div>
             <div className="flex items-center justify-between mb-1">
-              <h2 className="text-sm font-bold text-[#202733] dark:text-white">
-                Tâches créées vs terminées
+              <h2 className="panel-title text-sm font-bold text-[var(--text)] uppercase tracking-wider">
+                Flux de tâches
               </h2>
-              <span className="text-[10px] font-semibold text-[#667085] uppercase tracking-wider bg-[#F6F7F9] dark:bg-slate-800 px-2 py-0.5 rounded">
-                Bâtons récents
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border border-[var(--border)] text-[var(--text-muted)]">
+                5 JOURS
               </span>
             </div>
-            <p className="text-xs text-[#667085] dark:text-slate-400">
-              Évolution du volume de flux de travail sur les 5 derniers jours
+            <p className="text-xs text-[var(--text-muted)]">
+              Volume comparé de flux de travail sur les 5 derniers jours
             </p>
           </div>
 
           {/* Histogramme comparatif */}
           <div className="py-6">
-            <div className="flex items-end justify-between gap-3 h-36 px-2 border-b border-[#E4E7EC] dark:border-slate-800 pb-2">
+            <div className="flex items-end justify-between gap-3 h-36 px-2 border-b border-[var(--border)] pb-2">
               {historicalStats.map((item, idx) => {
                 const maxVal = Math.max(...historicalStats.map(s => Math.max(s.created, s.completed, 4)));
                 const hCreated = Math.round((item.created / maxVal) * 100);
@@ -230,57 +248,57 @@ export function OverviewDashboard({ onOpenTaskModal, onOpenCreateProjectModal }:
                     <div className="flex items-end justify-center gap-1.5 w-full h-28">
                       {/* Bâton Créées */}
                       <div 
-                        className="w-3 sm:w-4 bg-[#3478C8] rounded-t-sm hover:brightness-110 transition cursor-pointer relative group"
+                        className="w-3 sm:w-4 bg-[var(--brand)] rounded-t-xs hover:brightness-125 transition cursor-pointer relative group shadow-sm"
                         style={{ height: `${Math.max(12, hCreated)}%` }}
                         title={`Créées : ${item.created}`}
                       >
-                        <span className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 text-[10px] bg-slate-800 text-white px-1 rounded transition pointer-events-none z-10">
+                        <span className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 text-[10px] font-mono bg-[var(--surface-raised)] border border-[var(--brand)] text-[var(--text)] px-1 rounded transition pointer-events-none z-10">
                           {item.created}
                         </span>
                       </div>
                       {/* Bâton Terminées */}
                       <div 
-                        className="w-3 sm:w-4 bg-[#23845B] rounded-t-sm hover:brightness-110 transition cursor-pointer relative group"
+                        className="w-3 sm:w-4 bg-[var(--text)] rounded-t-xs hover:brightness-125 transition cursor-pointer relative group opacity-90"
                         style={{ height: `${Math.max(12, hCompleted)}%` }}
                         title={`Terminées : ${item.completed}`}
                       >
-                        <span className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 text-[10px] bg-slate-800 text-white px-1 rounded transition pointer-events-none z-10">
+                        <span className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 text-[10px] font-mono bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text)] px-1 rounded transition pointer-events-none z-10">
                           {item.completed}
                         </span>
                       </div>
                     </div>
-                    <span className="text-[10px] font-medium text-[#667085]">{item.period}</span>
+                    <span className="text-[10px] font-mono font-medium text-[var(--text-muted)]">{item.period}</span>
                   </div>
                 );
               })}
             </div>
 
             {/* Légende */}
-            <div className="flex items-center justify-center gap-6 mt-4 text-xs font-medium text-[#667085]">
+            <div className="flex items-center justify-center gap-6 mt-4 text-xs font-mono font-bold uppercase text-[var(--text-muted)]">
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-sm bg-[#3478C8]" />
-                <span>Tâches créées</span>
+                <span className="w-2.5 h-2.5 rounded-xs bg-[var(--brand)] shadow-xs" />
+                <span>Créées</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-sm bg-[#23845B]" />
-                <span>Tâches terminées</span>
+                <span className="w-2.5 h-2.5 rounded-xs bg-[var(--text)]" />
+                <span>Terminées</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Graphique B : Avancement réel comparé des projets actifs */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-[#E4E7EC] dark:border-slate-800 shadow-sm flex flex-col justify-between">
+        <div className="panel flex flex-col justify-between border border-[var(--border)] bg-[var(--surface)] p-5 rounded-[var(--r-md)]">
           <div>
             <div className="flex items-center justify-between mb-1">
-              <h2 className="text-sm font-bold text-[#202733] dark:text-white">
+              <h2 className="panel-title text-sm font-bold text-[var(--text)] uppercase tracking-wider">
                 Avancement des projets
               </h2>
-              <span className="text-[10px] font-semibold text-[#667085] uppercase tracking-wider bg-[#F6F7F9] dark:bg-slate-800 px-2 py-0.5 rounded">
-                Calcul réel
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border border-[var(--border)] text-[var(--text-muted)]">
+                CALCUL RÉEL
               </span>
             </div>
-            <p className="text-xs text-[#667085] dark:text-slate-400">
+            <p className="text-xs text-[var(--text-muted)]">
               Progression calculée sur les tâches validées par projet
             </p>
           </div>
@@ -290,21 +308,21 @@ export function OverviewDashboard({ onOpenTaskModal, onOpenCreateProjectModal }:
               <div key={project.id} className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="font-semibold text-[#202733] dark:text-white truncate">
+                    <span className="font-bold text-[var(--text)] truncate font-ui">
                       {project.name}
                     </span>
                   </div>
-                  <span className="font-bold text-[#202733] dark:text-white flex items-center gap-1">
+                  <span className="font-mono font-bold text-[var(--text)] flex items-center gap-1">
                     {progressPercentage}%
-                    <span className="text-[11px] font-normal text-[#667085]">
+                    <span className="text-[11px] font-normal text-[var(--text-muted)]">
                       ({completedTasks}/{totalTasks})
                     </span>
                   </span>
                 </div>
 
-                <div className="w-full bg-[#EEF1F4] dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div className="w-full bg-[var(--surface-2)] border border-[var(--border)] h-2 rounded-full overflow-hidden">
                   <div 
-                    className="h-full rounded-full transition-all duration-500 bg-[#23845B]"
+                    className="h-full bg-[var(--brand)] shadow-xs transition-all duration-500"
                     style={{ width: `${progressPercentage}%` }}
                   />
                 </div>
@@ -312,28 +330,30 @@ export function OverviewDashboard({ onOpenTaskModal, onOpenCreateProjectModal }:
             ))}
           </div>
 
-          <button 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setActiveView('project_sheet')}
-            className="w-full py-2 text-xs font-semibold text-[#3478C8] hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-xl transition flex items-center justify-center gap-1"
+            className="w-full text-xs text-[var(--text)] hover:text-[var(--brand)] mt-2"
+            iconRight={<ChevronRight className="w-3.5 h-3.5" />}
           >
-            <span>Consulter la fiche projet détaillée</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
+            Fiche projet détaillée
+          </Button>
         </div>
 
         {/* Graphique C : Répartition des statuts & Priorités */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-[#E4E7EC] dark:border-slate-800 shadow-sm flex flex-col justify-between">
+        <div className="panel flex flex-col justify-between border border-[var(--border)] bg-[var(--surface)] p-5 rounded-[var(--r-md)]">
           <div>
             <div className="flex items-center justify-between mb-1">
-              <h2 className="text-sm font-bold text-[#202733] dark:text-white">
-                Statuts & Priorités des tâches
+              <h2 className="panel-title text-sm font-bold text-[var(--text)] uppercase tracking-wider">
+                Colonnes Kanban
               </h2>
-              <span className="text-[10px] font-semibold text-[#667085] uppercase tracking-wider bg-[#F6F7F9] dark:bg-slate-800 px-2 py-0.5 rounded">
-                Flux actif
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border border-[var(--border)] text-[var(--text-muted)]">
+                FLUX ACTIF
               </span>
             </div>
-            <p className="text-xs text-[#667085] dark:text-slate-400">
-              Distribution dans les 4 colonnes Kanban
+            <p className="text-xs text-[var(--text-muted)]">
+              Distribution dans les 4 colonnes de travail
             </p>
           </div>
 
@@ -342,29 +362,31 @@ export function OverviewDashboard({ onOpenTaskModal, onOpenCreateProjectModal }:
             {statusBreakdown.map(col => (
               <div 
                 key={col.status} 
-                className="p-3 rounded-xl border border-[#E4E7EC] dark:border-slate-800 bg-[#F6F7F9]/70 dark:bg-slate-800/40"
+                className="p-3 rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--surface-2)]"
               >
-                <div className="text-[11px] font-semibold text-[#667085] dark:text-slate-400">
+                <div className="text-[11px] font-mono font-bold text-[var(--text-muted)] uppercase">
                   {col.label}
                 </div>
-                <div className="text-xl font-black mt-1" style={{ color: col.color }}>
+                <div className="text-xl font-mono font-bold mt-1 text-[var(--text)]">
                   {col.count}
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Jauge des priorités urgentes/hautes */}
-          <div className="space-y-1 pt-1 border-t border-[#E4E7EC] dark:border-slate-800 text-xs">
-            <div className="flex justify-between text-[#667085] font-medium text-[11px]">
-              <span>Urgences & Risques critiques</span>
-              <span className="font-bold text-[#C83B42]">{priorityDistribution.urgent.count} urgente(s)</span>
+          {/* Jauge des priorités */}
+          <div className="space-y-1 pt-2 border-t border-[var(--border)] text-xs">
+            <div className="flex justify-between text-[var(--text-muted)] font-mono text-[11px]">
+              <span>Urgences critiques</span>
+              <span className={`font-bold ${priorityDistribution.urgent.count > 0 ? 'text-[var(--button-danger-bg)]' : 'text-[var(--text)]'}`}>
+                {priorityDistribution.urgent.count} URGENTE(S)
+              </span>
             </div>
-            <div className="w-full h-2 rounded-full overflow-hidden flex bg-[#EEF1F4] dark:bg-slate-800">
-              <div style={{ width: `${priorityDistribution.urgent.percentage}%` }} className="bg-[#C83B42]" title="Urgente" />
-              <div style={{ width: `${priorityDistribution.high.percentage}%` }} className="bg-[#D69A24]" title="Haute" />
-              <div style={{ width: `${priorityDistribution.medium.percentage}%` }} className="bg-[#3478C8]" title="Moyenne" />
-              <div style={{ width: `${priorityDistribution.low.percentage}%` }} className="bg-[#667085]" title="Basse" />
+            <div className="w-full h-2 rounded-full overflow-hidden flex bg-[var(--surface-2)] border border-[var(--border)]">
+              <div style={{ width: `${priorityDistribution.urgent.percentage}%` }} className="bg-[var(--button-danger-bg)]" title="Urgente" />
+              <div style={{ width: `${priorityDistribution.high.percentage}%` }} className="bg-[var(--brand)]" title="Haute" />
+              <div style={{ width: `${priorityDistribution.medium.percentage}%` }} className="bg-[var(--border-strong)]" title="Moyenne" />
+              <div style={{ width: `${priorityDistribution.low.percentage}%` }} className="bg-[var(--border)]" title="Basse" />
             </div>
           </div>
         </div>
@@ -372,101 +394,97 @@ export function OverviewDashboard({ onOpenTaskModal, onOpenCreateProjectModal }:
 
       {/* 7.4 Tableau « À surveiller » & Activité récente */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Volet principal : À surveiller (Section 7.4) */}
-        <div className="lg:col-span-2 p-5 rounded-2xl bg-white dark:bg-slate-900 border border-[#E4E7EC] dark:border-slate-800 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-[#E4E7EC] dark:border-slate-800 pb-3">
+        {/* Volet principal : À surveiller */}
+        <div className="lg:col-span-2 panel space-y-4 border border-[var(--border)] bg-[var(--surface)] p-5 rounded-[var(--r-md)]">
+          <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
             <div>
-              <h2 className="text-sm font-bold text-[#202733] dark:text-white flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-[#C83B42]" />
-                Tâches à surveiller (Retards & Priorités)
+              <h2 className="panel-title text-sm flex items-center gap-2 font-bold text-[var(--text)] uppercase tracking-wider">
+                <span>Tâches à surveiller en priorité</span>
+                <span className="text-xs font-normal text-[var(--text-muted)]">(Retards & Arbitrages)</span>
               </h2>
-              <p className="text-xs text-[#667085] dark:text-slate-400">
-                Tâches nécessitant une décision, un arbitrage ou une relance
+              <p className="text-xs text-[var(--text-muted)]">
+                Tâches nécessitant un arbitrage ou une action prioritaire
               </p>
             </div>
-            <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-rose-50 text-[#C83B42] dark:bg-rose-950/40">
-              {watchTasks.length} élément(s) critique(s)
-            </span>
+            <Badge variant={watchTasks.length > 0 ? 'danger' : 'success'} size="sm">
+              {watchTasks.length} CRITIQUE(S)
+            </Badge>
           </div>
 
           {watchTasks.length === 0 ? (
-            <div className="py-12 text-center text-xs text-[#667085]">
-              Aucune tâche critique ou en retard. Tout est sous contrôle ! ✨
+            <div className="py-12 text-center text-xs text-[var(--text-muted)] font-mono">
+              Aucune tâche critique ou en retard. Tout est sous contrôle.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+            <div className="table-wrap border border-[var(--border)] rounded-[var(--r-sm)]">
+              <table className="table w-full">
                 <thead>
-                  <tr className="border-b border-[#E4E7EC] dark:border-slate-800 text-[11px] font-semibold text-[#667085] uppercase">
-                    <th className="py-2.5 pr-3">Tâche</th>
-                    <th className="py-2.5 px-3">Responsable</th>
-                    <th className="py-2.5 px-3">Priorité</th>
-                    <th className="py-2.5 px-3">Échéance</th>
-                    <th className="py-2.5 px-3">Statut</th>
-                    <th className="py-2.5 pl-3 text-right">Action</th>
+                  <tr>
+                    <th scope="col">TÂCHE</th>
+                    <th scope="col">RESPONSABLE</th>
+                    <th scope="col">PRIORITÉ</th>
+                    <th scope="col">ÉCHÉANCE</th>
+                    <th scope="col">STATUT</th>
+                    <th scope="col">ACTION</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#E4E7EC] dark:divide-slate-800">
+                <tbody>
                   {watchTasks.map(task => {
                     const assignee = users.find(u => u.id === task.assigneeId);
                     const isLate = isDateOverdue(task.dueDate, task.status);
 
                     return (
-                      <tr key={task.id} className="hover:bg-[#F6F7F9] dark:hover:bg-slate-800/50 transition">
-                        <td className="py-3 pr-3 font-semibold text-[#202733] dark:text-white max-w-[220px] truncate">
+                      <tr key={task.id}>
+                        <td className="max-w-[220px] truncate text-left">
                           <button 
                             onClick={() => onOpenTaskModal(task)}
-                            className="hover:text-[#C83B42] text-left transition"
+                            className="hover:text-[var(--brand)] text-left transition font-semibold text-[var(--text)] truncate block max-w-full"
                           >
                             {task.title}
                           </button>
                         </td>
-                        <td className="py-3 px-3">
+                        <td>
                           {assignee ? (
-                            <div className="flex items-center gap-1.5">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={assignee.avatar} alt={assignee.name} className="w-5 h-5 rounded-full object-cover" />
-                              <span className="text-[11px] text-[#667085] truncate max-w-[100px]">{assignee.name}</span>
+                            <div className="flex items-center justify-center gap-1.5">
+                              <span className="w-5 h-5 rounded-[var(--r-xs)] border border-[var(--border)] bg-[var(--surface-2)] flex items-center justify-center text-[9px] font-mono font-bold text-[var(--brand)]">
+                                {assignee.name.substring(0, 2).toUpperCase()}
+                              </span>
+                              <span className="text-[11px] text-[var(--text-muted)] truncate max-w-[100px]">{assignee.name}</span>
                             </div>
                           ) : (
-                            <span className="text-[11px] text-slate-400">Non assigné</span>
+                            <span className="text-[11px] text-[var(--text-muted)] font-mono">Non assigné</span>
                           )}
                         </td>
-                        <td className="py-3 px-3">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                            task.priority === 'urgent'
-                              ? 'bg-rose-50 text-[#C83B42] dark:bg-rose-950/50'
-                              : task.priority === 'high'
-                              ? 'bg-amber-50 text-[#D69A24] dark:bg-amber-950/50'
-                              : 'bg-slate-100 text-[#667085] dark:bg-slate-800'
-                          }`}>
-                            {task.priority}
-                          </span>
+                        <td>
+                          <Badge variant={getPriorityBadgeVariant(task.priority)} size="xs">
+                            {task.priority.toUpperCase()}
+                          </Badge>
                         </td>
-                        <td className="py-3 px-3 font-medium">
+                        <td className="font-mono text-center">
                           {isLate ? (
-                            <span className="text-[#C83B42] font-semibold flex items-center gap-1 text-[11px]">
-                              <AlertTriangle className="w-3 h-3" />
-                              {task.dueDate ? formatDayMonthFrench(task.dueDate) : 'Dépassée'}
+                            <span className="text-[var(--button-danger-bg)] flex items-center justify-center gap-1 text-[11px] font-bold">
+                              <AlertTriangle className="w-3 h-3 text-[var(--button-danger-bg)]" />
+                              {task.dueDate ? formatDayMonthFrench(task.dueDate) : 'DÉPASSÉE'}
                             </span>
                           ) : (
-                            <span className="text-[#667085] text-[11px]">
-                              {task.dueDate ? formatDayMonthFrench(task.dueDate) : 'Non fixée'}
+                            <span className="text-[var(--text-muted)] text-[11px]">
+                              {task.dueDate ? formatDayMonthFrench(task.dueDate) : '—'}
                             </span>
                           )}
                         </td>
-                        <td className="py-3 px-3">
-                          <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300">
-                            {task.status === 'in_progress' ? 'En cours' : task.status === 'in_review' ? 'En revue' : 'À faire'}
-                          </span>
+                        <td className="text-center">
+                          <Badge variant={getStatusBadgeVariant(task.status)} size="xs">
+                            {task.status.toUpperCase()}
+                          </Badge>
                         </td>
-                        <td className="py-3 pl-3 text-right">
-                          <button
+                        <td className="text-right">
+                          <Button
+                            variant="secondary"
+                            size="xs"
                             onClick={() => handleToggleTaskDone(task)}
-                            className="px-2.5 py-1 text-[11px] font-semibold text-[#23845B] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg transition border border-emerald-200 dark:border-emerald-800"
                           >
                             Valider
-                          </button>
+                          </Button>
                         </td>
                       </tr>
                     );
@@ -477,47 +495,47 @@ export function OverviewDashboard({ onOpenTaskModal, onOpenCreateProjectModal }:
           )}
         </div>
 
-        {/* Volet latéral : Activité récente & Charge d'équipe (Section 7.5 & 7.3E) */}
+        {/* Volet latéral : Activité récente & Charge d'équipe */}
         <div className="space-y-6">
           {/* Activité récente */}
-          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-[#E4E7EC] dark:border-slate-800 shadow-sm space-y-3">
-            <div className="flex items-center justify-between border-b border-[#E4E7EC] dark:border-slate-800 pb-2.5">
-              <h2 className="text-sm font-bold text-[#202733] dark:text-white flex items-center gap-1.5">
-                <Activity className="w-4 h-4 text-[#3478C8]" />
-                Activité récente
+          <div className="panel space-y-3 border border-[var(--border)] bg-[var(--surface)] p-5 rounded-[var(--r-md)]">
+            <div className="flex items-center justify-between border-b border-[var(--border)] pb-2.5">
+              <h2 className="panel-title text-sm font-bold text-[var(--text)] uppercase tracking-wider">
+                Journal d'activité
               </h2>
-              <span className="text-[10px] text-[#667085]">Traçabilité</span>
+              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border border-[var(--border)] text-[var(--text-muted)]">
+                DIRECT
+              </span>
             </div>
 
-            <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
               {activities.slice(0, 5).map(act => (
-                <div key={act.id} className="flex items-start gap-2.5 text-xs">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={act.userAvatar} alt={act.userName} className="w-6 h-6 rounded-full object-cover mt-0.5" />
+                <div key={act.id} className="flex items-start gap-2.5 text-xs py-1 border-b border-[var(--border)] last:border-b-0">
+                  <span className="w-2 h-2 rounded-full bg-[var(--brand)] mt-1 shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[#202733] dark:text-slate-200 leading-snug">
-                      <span className="font-semibold text-slate-900 dark:text-white">{act.userName}</span>{' '}
-                      {act.description}
+                    <p className="text-[var(--text)] leading-snug">
+                      <span className="font-semibold text-[var(--text)]">{act.userName}</span>{' '}
+                      <span className="text-[var(--text-muted)]">{act.description}</span>
                     </p>
-                    <span className="text-[10px] text-[#667085]">{formatRelativeTimeFrench(act.createdAt)}</span>
+                    <span className="text-[10px] text-[var(--text-muted)] font-mono block mt-0.5">{formatRelativeTimeFrench(act.createdAt)}</span>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Charge de l'équipe (35h contractuelle) */}
-          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-[#E4E7EC] dark:border-slate-800 shadow-sm space-y-3">
-            <div className="flex items-center justify-between border-b border-[#E4E7EC] dark:border-slate-800 pb-2.5">
-              <h2 className="text-sm font-bold text-[#202733] dark:text-white flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-[#C83B42]" />
-                Charge de l’équipe (35h)
+          {/* Charge de l'équipe */}
+          <div className="panel space-y-3 border border-[var(--border)] bg-[var(--surface)] p-5 rounded-[var(--r-md)]">
+            <div className="flex items-center justify-between border-b border-[var(--border)] pb-2.5">
+              <h2 className="panel-title text-sm font-bold text-[var(--text)] uppercase tracking-wider">
+                Charge équipe (35h)
               </h2>
               <button 
+                type="button"
                 onClick={() => setActiveView('team')}
-                className="text-[11px] font-medium text-[#3478C8] hover:underline"
+                className="text-[10px] font-mono font-bold text-[var(--brand)] hover:underline cursor-pointer uppercase"
               >
-                Détail
+                DÉTAIL
               </button>
             </div>
 
@@ -525,17 +543,17 @@ export function OverviewDashboard({ onOpenTaskModal, onOpenCreateProjectModal }:
               {workload.slice(0, 4).map(item => (
                 <div key={item.user.id} className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-[#202733] dark:text-slate-200 truncate">
+                    <span className="font-semibold text-[var(--text)] truncate font-ui">
                       {item.user.name}
                     </span>
-                    <span className={`text-[11px] font-bold ${item.isOverloaded ? 'text-[#C83B42]' : 'text-[#667085]'}`}>
+                    <span className={`text-[11px] font-mono font-bold ${item.isOverloaded ? 'text-[var(--button-danger-bg)]' : 'text-[var(--text-muted)]'}`}>
                       {item.loadPercentage}% ({Math.round(item.totalMinutes / 60)}h)
                     </span>
                   </div>
-                  <div className="w-full bg-[#EEF1F4] dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                  <div className="w-full bg-[var(--surface-2)] border border-[var(--border)] h-1.5 rounded-full overflow-hidden">
                     <div 
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        item.isOverloaded ? 'bg-[#C83B42]' : item.loadPercentage > 75 ? 'bg-[#D69A24]' : 'bg-[#23845B]'
+                      className={`h-full transition-all duration-500 ${
+                        item.isOverloaded ? 'bg-[var(--button-danger-bg)] shadow-xs' : 'bg-[var(--brand)]'
                       }`}
                       style={{ width: `${Math.min(100, item.loadPercentage)}%` }}
                     />

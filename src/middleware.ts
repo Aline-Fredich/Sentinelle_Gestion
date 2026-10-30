@@ -11,8 +11,17 @@ export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // Si Supabase n'est pas encore configuré (ex: premier démarrage local sans .env), autoriser la navigation
+  const pathname = request.nextUrl.pathname;
+  const isSuperAdminRoute = pathname.startsWith('/superadmin') || pathname.startsWith('/api/superadmin');
+
+  // Si Supabase n'est pas encore configuré (ex: premier démarrage local sans .env)
   if (!supabaseUrl || !supabaseKey) {
+    // En production, interdire l'accès superadmin sans fournisseur d'identité configuré
+    if (isSuperAdminRoute && process.env.NODE_ENV === 'production') {
+      return pathname.startsWith('/api/')
+        ? NextResponse.json({ error: 'Service d’authentification indisponible' }, { status: 503 })
+        : NextResponse.redirect(new URL('/', request.url));
+    }
     return response;
   }
 
@@ -45,11 +54,21 @@ export async function middleware(request: NextRequest) {
   // Rafraîchissement sécurisé du jeton d'accès de session
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Protection des routes d'administration privilégiées
-  const pathname = request.nextUrl.pathname;
-  if (pathname.startsWith('/superadmin') || pathname.startsWith('/api/superadmin')) {
+  // Protection stricte des routes d'administration privilégiées (authentification ET rôle super_admin)
+  if (isSuperAdminRoute) {
     if (!user) {
-      return NextResponse.redirect(new URL('/', request.url));
+      return pathname.startsWith('/api/')
+        ? NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+        : NextResponse.redirect(new URL('/', request.url));
+    }
+
+    const userRole = user.user_metadata?.role || user.app_metadata?.role;
+    const isSuperAdmin = userRole === 'super_admin' || user.user_metadata?.isSuperAdmin === true;
+
+    if (!isSuperAdmin) {
+      return pathname.startsWith('/api/')
+        ? NextResponse.json({ error: 'Accès interdit : privilèges Super Administrateur requis' }, { status: 403 })
+        : NextResponse.redirect(new URL('/', request.url));
     }
   }
 

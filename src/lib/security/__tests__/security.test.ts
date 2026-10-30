@@ -4,6 +4,8 @@ import {
   encryptSensitiveText,
   decryptSensitiveText,
   calculateSha256,
+  hashPassword,
+  verifyPassword,
 } from '../crypto.ts';
 import {
   escapeHtml,
@@ -62,6 +64,21 @@ describe('SENTINEL GESTION — Module Sécurité & Conformité (Phase 10)', () =
       const hash2 = await calculateSha256('sentinel-audit-test');
       assert.equal(hash1, hash2);
       assert.equal(hash1.length, 64);
+    });
+
+    it('hache et valide un mot de passe avec sel aléatoire et comparaison en temps constant', async () => {
+      const pwd = 'MotDePasseFort#2026!';
+      const { hash, salt } = await hashPassword(pwd);
+      assert.ok(hash.length === 64);
+      assert.ok(salt.length > 0);
+
+      // Validation avec le bon mot de passe
+      const valid = await verifyPassword(pwd, hash, salt);
+      assert.equal(valid, true);
+
+      // Rejet avec un mauvais mot de passe
+      const invalid = await verifyPassword('MauvaisMotDePasse', hash, salt);
+      assert.equal(invalid, false);
     });
   });
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { useSentinel } from '@/lib/store';
 import { Task } from '@/types/sentinel';
 import { getTodayDateString, isDateOverdue } from '@/lib/dateUtils';
@@ -13,14 +13,14 @@ interface CalendarViewProps {
 export function CalendarView({ onOpenTaskModal }: CalendarViewProps) {
   const { filteredTasks } = useSentinel();
   const [currentYear, setCurrentYear] = useState(2026);
-  const [currentMonth, setCurrentMonth] = useState(9); // Octobre (0-indexé : 9 = octobre)
+  const [currentMonth, setCurrentMonth] = useState(9); // Octobre (9 = octobre)
 
   const monthNames = [
-    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+    'JANVIER', 'FÉVRIER', 'MARS', 'AVRIL', 'MAI', 'JUIN',
+    'JUILLET', 'AOÛT', 'SEPTEMBRE', 'OCTOBRE', 'NOVEMBRE', 'DÉCEMBRE'
   ];
 
-  const daysOfWeek = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+  const daysOfWeek = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
 
   const handlePrevMonth = () => {
     if (currentMonth === 0) {
@@ -46,27 +46,28 @@ export function CalendarView({ onOpenTaskModal }: CalendarViewProps) {
     setCurrentMonth(now.getMonth());
   };
 
-  // Calcul du premier jour et du nombre de jours dans le mois
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-  // Ajustement lundi = 0
   const startOffset = (firstDay + 6) % 7;
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
   const todayStr = getTodayDateString();
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-7xl mx-auto pb-12">
       {/* En-tête de navigation calendrier */}
-      <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-wrap items-center justify-between gap-3">
+      <div className="panel flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-[#0066FF] dark:text-cyan-400">
-            <CalendarIcon className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-[6px] border border-red bg-red/10 flex items-center justify-center text-red">
+            <CalendarIcon className="w-5 h-5 text-red" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-              {monthNames[currentMonth]} {currentYear}
-            </h2>
-            <p className="text-xs text-slate-500">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-red shadow-[var(--glow-sm)]" />
+              <h2 className="text-base font-bold text-white uppercase tracking-wider">
+                {monthNames[currentMonth]} {currentYear}
+              </h2>
+            </div>
+            <p className="text-xs text-white/45 mt-0.5">
               Visualisation chronologique des échéances et livrables
             </p>
           </div>
@@ -75,41 +76,43 @@ export function CalendarView({ onOpenTaskModal }: CalendarViewProps) {
         <div className="flex items-center gap-2">
           <button
             onClick={handleToday}
-            className="px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-xl transition"
+            className="btn btn-secondary btn-sm"
           >
-            Aujourd’hui
+            AUJOURD’HUI
           </button>
-          <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+          <div className="flex items-center border border-[#242424] rounded-[6px] overflow-hidden bg-black">
             <button
               onClick={handlePrevMonth}
-              className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              className="p-2 text-white/70 hover:text-white hover:bg-[#0D0D0D] transition"
+              aria-label="Mois précédent"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4 text-red" />
             </button>
             <button
               onClick={handleNextMonth}
-              className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              className="p-2 text-white/70 hover:text-white hover:bg-[#0D0D0D] transition"
+              aria-label="Mois suivant"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4 text-red" />
             </button>
           </div>
         </div>
       </div>
 
       {/* Grille du calendrier */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-        {/* Noms des jours */}
-        <div className="grid grid-cols-7 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 text-center py-2.5 text-xs font-bold text-slate-500 dark:text-slate-400">
+      <div className="panel p-0 overflow-hidden border-[#242424]">
+        {/* Noms des jours - En-tête rouge plein */}
+        <div className="grid grid-cols-7 border-b border-[#242424] bg-red text-center py-2.5 text-micro font-bold uppercase tracking-wider text-white">
           {daysOfWeek.map(d => (
             <div key={d}>{d}</div>
           ))}
         </div>
 
         {/* Jours du mois */}
-        <div className="grid grid-cols-7 auto-rows-[120px] divide-x divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
+        <div className="grid grid-cols-7 auto-rows-[120px] divide-x divide-y divide-[#242424] text-xs bg-black">
           {/* Cases vides pour le début */}
           {Array.from({ length: startOffset }).map((_, idx) => (
-            <div key={`empty-${idx}`} className="bg-slate-50/30 dark:bg-slate-900/20 p-2" />
+            <div key={`empty-${idx}`} className="bg-[#050505] p-2" />
           ))}
 
           {/* Jours réels */}
@@ -126,24 +129,24 @@ export function CalendarView({ onOpenTaskModal }: CalendarViewProps) {
               <div
                 key={`day-${dayNum}`}
                 className={`p-2 flex flex-col justify-between transition ${
-                  isToday ? 'bg-blue-50/40 dark:bg-blue-950/20' : ''
+                  isToday ? 'bg-red/5' : ''
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${
-                    isToday ? 'bg-[#0066FF] text-white shadow-sm' : 'text-slate-700 dark:text-slate-300'
+                  <span className={`w-6 h-6 flex items-center justify-center rounded-[4px] text-xs font-mono font-bold ${
+                    isToday ? 'bg-red text-white shadow-[var(--glow-sm)]' : 'text-white'
                   }`}>
                     {dayNum}
                   </span>
                   {dayTasks.length > 0 && (
-                    <span className="text-xs font-bold text-slate-400">
+                    <span className="badge font-mono text-[9px] py-0 px-1">
                       {dayTasks.length}
                     </span>
                   )}
                 </div>
 
                 {/* Tâches du jour */}
-                <div className="space-y-1 overflow-y-auto max-h-[80px] my-1">
+                <div className="space-y-1 overflow-y-auto max-h-[80px] my-1 pr-0.5">
                   {dayTasks.map(t => {
                     const isDone = t.status === 'done';
                     const isLate = isDateOverdue(t.dueDate, t.status);
@@ -152,12 +155,12 @@ export function CalendarView({ onOpenTaskModal }: CalendarViewProps) {
                       <div
                         key={t.id}
                         onClick={() => onOpenTaskModal(t)}
-                        className={`px-1.5 py-1 rounded text-xs font-medium truncate cursor-pointer transition ${
+                        className={`px-1.5 py-0.5 rounded-[3px] text-micro font-bold uppercase tracking-wide truncate cursor-pointer transition border ${
                           isDone
-                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                            ? 'bg-black border-white text-white'
                             : isLate
-                            ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                            : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-cyan-300'
+                            ? 'bg-red/20 border-red text-red'
+                            : 'bg-[#0D0D0D] border-[#242424] text-white hover:border-red'
                         }`}
                         title={t.title}
                       >

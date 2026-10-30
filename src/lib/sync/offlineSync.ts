@@ -30,11 +30,14 @@ export interface SyncStatus {
 const STORAGE_KEY_QUEUE = 'sentinel_offline_mutation_queue_v1';
 const STORAGE_KEY_LAST_SYNC = 'sentinel_last_sync_timestamp';
 
+let memoryQueue: PendingMutation[] = [];
+let memoryLastSync: string | null = null;
+
 /**
- * Récupère la liste des mutations en attente depuis le stockage local.
+ * Récupère la liste des mutations en attente depuis le stockage local (ou mémoire).
  */
 export function getPendingMutations(): PendingMutation[] {
-  if (typeof window === 'undefined') return [];
+  if (typeof window === 'undefined') return [...memoryQueue];
   try {
     const raw = localStorage.getItem(STORAGE_KEY_QUEUE);
     if (!raw) return [];
@@ -46,15 +49,62 @@ export function getPendingMutations(): PendingMutation[] {
 }
 
 /**
- * Sauvegarde la file d'attente dans le stockage local.
+ * Sauvegarde la file d'attente dans le stockage local (ou mémoire).
  */
 export function savePendingMutations(queue: PendingMutation[]): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    memoryQueue = [...queue];
+    return;
+  }
   try {
     localStorage.setItem(STORAGE_KEY_QUEUE, JSON.stringify(queue));
   } catch (err) {
     console.error('Erreur lors de la sauvegarde de la file d’attente hors-ligne:', err);
   }
+}
+
+/**
+ * Vide complètement la file d'attente locale (utilitaire de réinitialisation/test).
+ */
+export function clearPendingMutations(): void {
+  if (typeof window === 'undefined') {
+    memoryQueue = [];
+    memoryLastSync = null;
+    return;
+  }
+  try {
+    localStorage.removeItem(STORAGE_KEY_QUEUE);
+  } catch (err) {
+    console.error('Erreur lors du nettoyage de la file hors-ligne:', err);
+  }
+}
+
+/**
+ * Récupère l'horodatage de la dernière synchronisation réussie.
+ */
+export function getLastSyncTimestamp(): string | null {
+  if (typeof window === 'undefined') return memoryLastSync;
+  try {
+    return localStorage.getItem(STORAGE_KEY_LAST_SYNC);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Récupère l'état global actuel de la synchronisation hors-ligne.
+ */
+export function getSyncStatus(): SyncStatus {
+  const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+  const queue = getPendingMutations();
+  const hasErrors = queue.some(m => m.status === 'failed');
+  return {
+    isOnline,
+    isSyncing: queue.some(m => m.status === 'syncing'),
+    pendingCount: queue.length,
+    lastSyncedAt: getLastSyncTimestamp(),
+    hasErrors,
+  };
 }
 
 /**
@@ -90,7 +140,7 @@ export function enqueueMutation(
   }
 
   savePendingMutations(queue);
-  return newEntry;
+  return existingIndex >= 0 ? queue[existingIndex] : newEntry;
 }
 
 /**
@@ -160,8 +210,11 @@ export async function flushSyncQueue(
 
   savePendingMutations(remainingQueue);
 
+  const nowIso = new Date().toISOString();
   if (typeof window !== 'undefined' && processed > 0) {
-    localStorage.setItem(STORAGE_KEY_LAST_SYNC, new Date().toISOString());
+    localStorage.setItem(STORAGE_KEY_LAST_SYNC, nowIso);
+  } else if (processed > 0) {
+    memoryLastSync = nowIso;
   }
 
   return {

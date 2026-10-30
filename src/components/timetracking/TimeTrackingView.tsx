@@ -10,13 +10,13 @@ import { formatCurrency } from '@/lib/currencyUtils';
 
 // Jours de la semaine de référence
 const WEEK_DAYS = [
-  { label: 'Lun', date: '2026-10-06' },
-  { label: 'Mar', date: '2026-10-07' },
-  { label: 'Mer', date: '2026-10-08' },
-  { label: 'Jeu', date: '2026-10-09' },
-  { label: 'Ven', date: '2026-10-10' },
-  { label: 'Sam', date: '2026-10-11' },
-  { label: 'Dim', date: '2026-10-12' },
+  { label: 'LUN', date: '2026-10-06' },
+  { label: 'MAR', date: '2026-10-07' },
+  { label: 'MER', date: '2026-10-08' },
+  { label: 'JEU', date: '2026-10-09' },
+  { label: 'VEN', date: '2026-10-10' },
+  { label: 'SAM', date: '2026-10-11' },
+  { label: 'DIM', date: '2026-10-12' },
 ];
 
 export function TimeTrackingView() {
@@ -157,36 +157,39 @@ export function TimeTrackingView() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* En-tête du module Suivi du Temps */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-5 bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-950/50 flex items-center justify-center text-[#0066FF] shadow-sm">
-            <Clock className="w-6 h-6" />
+      <div className="panel flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-[6px] border border-red bg-red/10 flex items-center justify-center text-red">
+            <Clock className="w-5 h-5 text-red" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">
-              Suivi du Temps & Feuilles de Temps
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-red shadow-[var(--glow-sm)]" />
+              <h1 className="text-base font-bold text-white uppercase tracking-wider">
+                SUIVI DU TEMPS & FEUILLES DE TEMPS
+              </h1>
+            </div>
+            <p className="text-xs text-white/45 mt-0.5">
               Chronométrez vos travaux en direct ou déclarez vos heures pour mesurer la charge réelle
             </p>
           </div>
         </div>
       </div>
 
-      {/* Carte du Chronomètre Interactif en Direct */}
-      <div className="p-6 bg-gradient-to-r from-blue-900/10 via-slate-900/5 to-slate-900/10 dark:from-blue-950/40 dark:to-slate-900 rounded-2xl border border-blue-200/80 dark:border-blue-900/50 shadow-sm">
+      {/* Carte du Chronomètre Interactif en Direct - Bloc Hero */}
+      <div className="panel panel--hero">
         <div className="flex flex-wrap items-center justify-between gap-6">
           <div className="space-y-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#0066FF] flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#0066FF] animate-ping" />
-              Chronomètre en Direct
+            <span className="text-micro font-bold uppercase tracking-wider text-red flex items-center gap-2 font-mono">
+              <span className="w-2 h-2 rounded-full bg-red shadow-[var(--glow-sm)] animate-ping" />
+              CHRONOMÈTRE EN DIRECT (CONSOLE TECHNIQUE)
             </span>
-            <div className="text-4xl font-mono font-black text-slate-900 dark:text-white tracking-widest">
+            <div className="text-4xl font-mono font-bold text-white tracking-widest">
               {formatTimerClock(timerSeconds)}
             </div>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-white/45 font-mono">
               {activeTimer 
                 ? `Enregistrement en cours : ${activeTimer.description}` 
                 : 'Prêt à décompter le temps pour la tâche active'}
@@ -197,10 +200,10 @@ export function TimeTrackingView() {
             {activeTimer ? (
               <button
                 onClick={stopTimer}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#FF1E27] hover:bg-red-700 text-white font-bold text-sm shadow-lg shadow-red-600/30 transition"
+                className="btn btn-danger btn-lg"
               >
-                <Square className="w-4 h-4 fill-current" />
-                <span>Arrêter et enregistrer</span>
+                <Square className="w-4 h-4 fill-current text-white" />
+                <span>ARRÊTER ET ENREGISTRER</span>
               </button>
             ) : (
               <button
@@ -208,10 +211,10 @@ export function TimeTrackingView() {
                   const targetProj = activeProjectId === 'all' ? 'proj-1' : activeProjectId;
                   startTimer(targetProj, undefined, 'Session de travail');
                 }}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#0066FF] hover:bg-blue-600 text-white font-bold text-sm shadow-lg shadow-blue-600/30 transition"
+                className="btn btn-primary btn-lg"
               >
-                <Play className="w-4 h-4 fill-current" />
-                <span>Démarrer le chronomètre</span>
+                <Play className="w-4 h-4 fill-current text-white" />
+                <span>DÉMARRER LE CHRONOMÈTRE</span>
               </button>
             )}
           </div>
@@ -219,60 +222,75 @@ export function TimeTrackingView() {
       </div>
 
       {/* Cartes KPI */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-5 rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-sm">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Volume d'Heures Passé</span>
-          <div className="mt-2 text-2xl font-black text-[#0066FF]">
+      <div className="grid-auto">
+        <div className="panel kpi">
+          <div className="kpi-head">
+            <span className="kpi-label">Volume d'Heures Passé</span>
+            <div className="kpi-icon">
+              <Clock className="w-4 h-4 text-red" />
+            </div>
+          </div>
+          <div className="kpi-value font-mono">
             {totalHours} h
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">{totalMinutes} minutes cumulées</span>
+          <span className="kpi-delta font-mono">{totalMinutes} minutes cumulées</span>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-sm">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Coût Main d'Œuvre Valorisé</span>
-          <div className="mt-2 text-2xl font-black text-emerald-600">
+        <div className="panel kpi">
+          <div className="kpi-head">
+            <span className="kpi-label">Coût Main d'Œuvre</span>
+            <div className="kpi-icon">
+              <Clock className="w-4 h-4 text-red" />
+            </div>
+          </div>
+          <div className="kpi-value font-mono">
             {formatCurrency(totalValorizedCost, workspace.currency || 'FCFA')}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">Taux moyen calculé à {formatCurrency(workspace.defaultHourlyRate || 15000, workspace.currency || 'FCFA')} / heure</span>
+          <span className="kpi-delta">Taux calculé à {formatCurrency(workspace.defaultHourlyRate || 15000, workspace.currency || 'FCFA')}/h</span>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-sm">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sessions Enregistrées</span>
-          <div className="mt-2 text-2xl font-black text-slate-900 dark:text-white">
+        <div className="panel kpi">
+          <div className="kpi-head">
+            <span className="kpi-label">Sessions Enregistrées</span>
+            <div className="kpi-icon">
+              <Clock className="w-4 h-4 text-red" />
+            </div>
+          </div>
+          <div className="kpi-value font-mono">
             {projectTimeEntries.length}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">Feuilles de temps validées</span>
+          <span className="kpi-delta">Feuilles de temps validées</span>
         </div>
       </div>
 
       {/* Saisie Manuelle & Répartition par Membre */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Colonne gauche : Formulaire d'ajout manuel rapide */}
-        <div className="p-5 bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-          <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Plus className="w-4 h-4 text-[#0066FF]" />
-            Déclarer des heures manuellement
+        <div className="panel space-y-4">
+          <h3 className="panel-title mb-0">
+            <Plus className="w-4 h-4 text-red" />
+            DÉCLARER DES HEURES
           </h3>
 
           <form onSubmit={handleManualAdd} className="space-y-3.5">
-            <div>
-              <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+            <div className="form-group mb-0">
+              <label className="form-label">
                 Tâche concernée (optionnel)
               </label>
               <select
                 value={selectedTaskId}
                 onChange={(e) => setSelectedTaskId(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                className="form-select uppercase font-bold text-xs"
               >
                 <option value="">Sélectionner une tâche...</option>
                 {tasks.map(t => (
-                  <option key={t.id} value={t.id}>{t.title}</option>
+                  <option key={t.id} value={t.id}>{t.title.toUpperCase()}</option>
                 ))}
               </select>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+            <div className="form-group mb-0">
+              <label className="form-label">
                 Description de l'activité
               </label>
               <input
@@ -281,13 +299,13 @@ export function TimeTrackingView() {
                 value={descriptionInput}
                 onChange={(e) => setDescriptionInput(e.target.value)}
                 placeholder="Ex : Révision de code, réunion de sprint..."
-                className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                className="form-input text-xs"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+            <div className="form-row">
+              <div className="form-group mb-0">
+                <label className="form-label">
                   Nombre d'heures
                 </label>
                 <input
@@ -297,12 +315,12 @@ export function TimeTrackingView() {
                   value={manualDurationHours}
                   onChange={(e) => setManualDurationHours(e.target.value)}
                   placeholder="Ex : 2.5"
-                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                  className="form-input font-mono font-bold text-xs"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+              <div className="form-group mb-0">
+                <label className="form-label">
                   Date
                 </label>
                 <input
@@ -310,22 +328,22 @@ export function TimeTrackingView() {
                   required
                   value={manualDate}
                   onChange={(e) => setManualDate(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                  className="form-input font-mono text-xs"
                 />
               </div>
             </div>
 
             <button
               type="submit"
-              className="w-full py-2 bg-[#0066FF] hover:bg-blue-600 text-white font-bold text-xs rounded-xl shadow-md transition"
+              className="btn btn-primary btn-block"
             >
-              Ajouter à ma feuille de temps
+              AJOUTER À LA FEUILLE DE TEMPS
             </button>
           </form>
 
           {/* Répartition par membre */}
-          <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
-            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+          <div className="pt-4 border-t border-[#242424] space-y-3">
+            <h4 className="text-micro font-bold text-white/45 uppercase tracking-wider">
               Temps cumulé par membre
             </h4>
             {memberBreakdown.map((m, idx) => {
@@ -333,11 +351,12 @@ export function TimeTrackingView() {
               return (
                 <div key={idx} className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={m.avatar} alt={m.name} className="w-5 h-5 rounded-full object-cover" />
-                    <span className="font-medium text-slate-700 dark:text-slate-300">{m.name}</span>
+                    <span className="w-5 h-5 rounded-[4px] border border-red bg-red/10 text-white font-mono text-[9px] font-bold flex items-center justify-center">
+                      {m.name.charAt(0)}
+                    </span>
+                    <span className="font-bold text-white uppercase">{m.name}</span>
                   </div>
-                  <span className="font-bold text-slate-900 dark:text-white">{h} h</span>
+                  <span className="font-mono font-bold text-white">{h} h</span>
                 </div>
               );
             })}
@@ -345,80 +364,74 @@ export function TimeTrackingView() {
         </div>
 
         {/* Colonne droite : Onglets Feuille de Temps Hebdo & Sessions */}
-        <div className="lg:col-span-2 bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40 flex items-center justify-between">
-            <div className="flex items-center gap-2">
+        <div className="lg:col-span-2 panel space-y-4">
+          <div className="flex flex-wrap items-center justify-between border-b border-[#242424] pb-3 gap-2">
+            <div className="tabs">
               <button
                 onClick={() => setActiveTab('timesheet')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                  activeTab === 'timesheet'
-                    ? 'bg-[#0066FF] text-white shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                }`}
+                aria-selected={activeTab === 'timesheet'}
+                className="tab"
               >
-                Feuille de Temps Hebdomadaire
+                FEUILLE DE TEMPS HEBDOMADAIRE
               </button>
               <button
                 onClick={() => setActiveTab('sessions')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                  activeTab === 'sessions'
-                    ? 'bg-[#0066FF] text-white shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                }`}
+                aria-selected={activeTab === 'sessions'}
+                className="tab"
               >
-                Journal des Sessions ({projectTimeEntries.length})
+                JOURNAL DES SESSIONS ({projectTimeEntries.length})
               </button>
             </div>
 
-            <span className="text-xs font-semibold text-slate-500">
-              Semaine du 6 au 12 Octobre
+            <span className="tag-mono text-white/45">
+              SEMAINE DU 6 AU 12 OCTOBRE
             </span>
           </div>
 
-          {/* VUE 1 : FEUILLE DE TEMPS HEBDOMADAIRE (MATRICE 7 JOURS) */}
+          {/* VUE 1 : FEUILLE DE TEMPS HEBDOMADAIRE */}
           {activeTab === 'timesheet' ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-sm">
+            <div className="table-wrap">
+              <table className="table">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 text-slate-500 text-xs font-semibold uppercase tracking-wider">
-                    <th className="py-3 px-4 min-w-[200px]">Tâche / Activité</th>
+                  <tr>
+                    <th className="min-w-[200px] text-left">TÂCHE / ACTIVITÉ</th>
                     {WEEK_DAYS.map(d => (
-                      <th key={d.date} className="py-3 px-3 text-center w-16">
+                      <th key={d.date} className="w-16">
                         <div>{d.label}</div>
-                        <div className="text-[10px] text-slate-400 font-normal">{d.date.slice(8)}/10</div>
+                        <div className="text-[9px] text-white/70 font-mono font-normal">{d.date.slice(8)}/10</div>
                       </th>
                     ))}
-                    <th className="py-3 px-4 text-center font-bold text-slate-900 dark:text-white w-20">Total</th>
+                    <th className="w-20 text-right">TOTAL</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                <tbody>
                   {weeklyGridData.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="py-12 text-center text-slate-400">
+                      <td colSpan={9} className="table-empty">
                         Aucune heure enregistrée pour cette semaine.
                       </td>
                     </tr>
                   ) : (
                     weeklyGridData.map((row, idx) => (
-                      <tr key={idx} className="hover:bg-blue-50/20 dark:hover:bg-slate-800/40 transition">
-                        <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white">
+                      <tr key={idx}>
+                        <td className="font-bold text-white uppercase text-left">
                           {row.title}
                         </td>
                         {WEEK_DAYS.map(d => {
                           const val = row.hoursByDay[d.date] || 0;
                           return (
-                            <td key={d.date} className="py-3 px-3 text-center">
+                            <td key={d.date} className="font-mono text-center">
                               {val > 0 ? (
-                                <span className="font-mono font-bold text-[#0066FF] bg-blue-50 dark:bg-blue-950/60 px-1.5 py-0.5 rounded">
+                                <span className="font-bold text-red">
                                   {val}h
                                 </span>
                               ) : (
-                                <span className="text-slate-300 dark:text-slate-700">—</span>
+                                <span className="cell-dim">—</span>
                               )}
                             </td>
                           );
                         })}
-                        <td className="py-3 px-4 text-center font-mono font-bold text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-900/40">
+                        <td className="font-mono font-bold text-white text-right">
                           {row.total.toFixed(1)}h
                         </td>
                       </tr>
@@ -427,16 +440,16 @@ export function TimeTrackingView() {
                 </tbody>
                 {weeklyGridData.length > 0 && (
                   <tfoot>
-                    <tr className="border-t-2 border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/80 font-bold text-xs">
-                      <td className="py-3 px-4 text-slate-900 dark:text-white">
+                    <tr className="border-t border-[#242424] font-bold text-xs bg-[#0D0D0D]">
+                      <td className="text-white uppercase text-left">
                         Total Heures Déclarées
                       </td>
                       {WEEK_DAYS.map(d => (
-                        <td key={d.date} className="py-3 px-3 text-center font-mono text-[#0066FF]">
+                        <td key={d.date} className="text-center font-mono text-red">
                           {(dailyTotals[d.date] || 0).toFixed(1)}h
                         </td>
                       ))}
-                      <td className="py-3 px-4 text-center font-mono text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40">
+                      <td className="text-right font-mono font-bold text-white">
                         {totalHours}h
                       </td>
                     </tr>
@@ -446,22 +459,22 @@ export function TimeTrackingView() {
             </div>
           ) : (
             /* VUE 2 : JOURNAL DÉTAILLÉ DES SESSIONS */
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-sm">
+            <div className="table-wrap">
+              <table className="table">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 text-slate-500 text-xs font-semibold uppercase tracking-wider">
-                    <th className="py-3 px-4">Date</th>
-                    <th className="py-3 px-4">Collaborateur</th>
-                    <th className="py-3 px-4">Activité & Tâche</th>
-                    <th className="py-3 px-4 text-center">Durée</th>
-                    <th className="py-3 px-4 text-right">Coût</th>
-                    <th className="py-3 px-4 text-center">Action</th>
+                  <tr>
+                    <th>DATE</th>
+                    <th>COLLABORATEUR</th>
+                    <th>ACTIVITÉ & TÂCHE</th>
+                    <th>DURÉE</th>
+                    <th>COÛT</th>
+                    <th>ACTION</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                <tbody>
                   {projectTimeEntries.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-12 text-center text-slate-400 text-xs">
+                      <td colSpan={6} className="table-empty">
                         Aucune session de travail consignée.
                       </td>
                     </tr>
@@ -470,29 +483,27 @@ export function TimeTrackingView() {
                       const hours = (entry.durationMinutes / 60).toFixed(1);
                       const cost = Math.round((entry.durationMinutes / 60) * (entry.hourlyRate || 75));
                       return (
-                        <tr key={entry.id} className="hover:bg-blue-50/20 dark:hover:bg-slate-800/40 transition">
-                          <td className="py-3 px-4 text-xs text-slate-500">{entry.date}</td>
-                          <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white text-xs">
+                        <tr key={entry.id}>
+                          <td className="font-mono text-white/70">{entry.date}</td>
+                          <td className="font-bold text-white uppercase">
                             {entry.userName}
                           </td>
-                          <td className="py-3 px-4 text-xs">
-                            <span className="font-medium text-slate-800 dark:text-slate-200 block">
-                              {entry.description}
-                            </span>
+                          <td className="text-left font-medium text-white/70">
+                            {entry.description}
                           </td>
-                          <td className="py-3 px-4 text-center font-mono font-bold text-[#0066FF]">
+                          <td className="font-mono font-bold text-red">
                             {hours} h
                           </td>
-                          <td className="py-3 px-4 text-right font-semibold text-slate-700 dark:text-slate-300">
+                          <td className="font-mono font-bold text-white text-right">
                             {formatCurrency(cost, workspace.currency || 'FCFA')}
                           </td>
-                          <td className="py-3 px-4 text-center">
+                          <td className="text-right">
                             <button
                               onClick={() => deleteTimeEntry(entry.id)}
-                              className="p-1.5 text-slate-400 hover:text-[#FF1E27] rounded-lg transition"
+                              className="btn btn-ghost btn-sm p-1.5 text-white/45 hover:text-red"
                               title="Supprimer"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </td>
                         </tr>

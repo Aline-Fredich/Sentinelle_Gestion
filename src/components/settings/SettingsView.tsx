@@ -4,9 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { 
   Shield, RefreshCcw, Lock, CheckCircle2, 
   FileText, Database, ShieldAlert, Key, Globe, Eye,
-  Zap, Send, Check, AlertCircle, BellRing
+  Zap, Send, Check, AlertCircle, BellRing, Palette, Sparkles, Sliders
 } from 'lucide-react';
 import { useSentinel } from '@/lib/store';
+import { AppearanceSelector } from '@/components/theme/AppearanceSelector';
+import { useTheme } from '@/context/ThemeContext';
 import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog';
 import { formatRelativeTimeFrench } from '@/lib/dateUtils';
 import { 
@@ -17,7 +19,8 @@ import {
 
 export function SettingsView() {
   const { workspace, currentUser, users, activities, resetToFactoryData } = useSentinel();
-  const [activeTab, setActiveTab] = useState<'general' | 'security' | 'audit' | 'data' | 'automations'>('general');
+  const { themeData } = useTheme();
+  const [activeTab, setActiveTab] = useState<'general' | 'appearance' | 'security' | 'audit' | 'data' | 'automations'>('appearance');
   const [resetDone, setResetDone] = useState(false);
   const [showConfirmReset, setShowConfirmReset] = useState(false);
 
@@ -66,7 +69,7 @@ export function SettingsView() {
     try {
       const payload = formatWebhookPayload(
         webhookPlatform,
-        'Test de Connexion SENTINEL GESTION',
+        'Test de Connexion SENTINELLE DE GESTION',
         'Le connecteur Webhook fonctionne avec succès depuis votre instance Sentinel.',
         'Projet Démonstration'
       );
@@ -97,176 +100,273 @@ export function SettingsView() {
   };
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6 pb-12">
       {/* En-tête Paramètres */}
-      <div className="p-6 bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="panel flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-[#0066FF] dark:text-blue-400 mb-1 uppercase tracking-wider">
-            <Shield className="w-3.5 h-3.5" />
-            Administration & Gouvernance
+          <div className="flex items-center gap-2 text-micro font-bold text-red mb-1 uppercase tracking-wider">
+            <Shield className="w-3.5 h-3.5 text-red" />
+            ADMINISTRATION & GOUVERNANCE
           </div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-            Paramètres du Système SENTINEL GESTION
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-red shadow-[var(--glow-sm)]" />
+            <h1 className="text-base font-bold text-white uppercase tracking-wider">
+              PARAMÈTRES DU SYSTÈME SENTINELLE
+            </h1>
+          </div>
+          <p className="text-xs text-white/45 mt-1">
             Gérez la sécurité, les journaux d'audit certifiés et les préférences d'organisation.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="px-3 py-1 rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 text-xs font-bold border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            Sécurisé TLS 1.3 / AES-256
+          <span className="badge badge--ok text-micro">
+            SÉCURISÉ TLS 1.3 / AES-256
           </span>
         </div>
       </div>
 
       {/* Barre d'onglets */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 text-xs font-semibold overflow-x-auto">
+      <div className="tabs">
+        <button
+          data-testid="tab-appearance"
+          onClick={() => setActiveTab('appearance')}
+          aria-selected={activeTab === 'appearance'}
+          className="tab flex items-center gap-2"
+        >
+          <Palette className="w-3.5 h-3.5" />
+          <span>APPARENCE & THÈMES</span>
+        </button>
+
         <button
           onClick={() => setActiveTab('general')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition ${
-            activeTab === 'general'
-              ? 'bg-[#0066FF] text-white shadow-md shadow-blue-500/20'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
+          aria-selected={activeTab === 'general'}
+          className="tab flex items-center gap-2"
         >
-          <Globe className="w-4 h-4" />
-          <span>Général & Organisation</span>
+          <Globe className="w-3.5 h-3.5" />
+          <span>GÉNÉRAL & ORGANISATION</span>
         </button>
 
         <button
           onClick={() => setActiveTab('security')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition ${
-            activeTab === 'security'
-              ? 'bg-[#0066FF] text-white shadow-md shadow-blue-500/20'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
+          aria-selected={activeTab === 'security'}
+          className="tab flex items-center gap-2"
         >
-          <Lock className="w-4 h-4" />
-          <span>Sécurité & Rôles (RBAC)</span>
+          <Lock className="w-3.5 h-3.5" />
+          <span>SÉCURITÉ & RÔLES (RBAC)</span>
         </button>
 
         <button
           onClick={() => setActiveTab('audit')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition ${
-            activeTab === 'audit'
-              ? 'bg-[#0066FF] text-white shadow-md shadow-blue-500/20'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
+          aria-selected={activeTab === 'audit'}
+          className="tab flex items-center gap-2"
         >
-          <FileText className="w-4 h-4" />
-          <span>Journal d’Audit de Sécurité ({activities.length})</span>
+          <FileText className="w-3.5 h-3.5" />
+          <span>JOURNAL D’AUDIT ({activities.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('data')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition ${
-            activeTab === 'data'
-              ? 'bg-[#0066FF] text-white shadow-md shadow-blue-500/20'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
+          aria-selected={activeTab === 'data'}
+          className="tab flex items-center gap-2"
         >
-          <Database className="w-4 h-4" />
-          <span>Données & Sauvegardes</span>
+          <Database className="w-3.5 h-3.5" />
+          <span>DONNÉES & SAUVEGARDES</span>
         </button>
 
         <button
           onClick={() => setActiveTab('automations')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition ${
-            activeTab === 'automations'
-              ? 'bg-[#0066FF] text-white shadow-md shadow-blue-500/20'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
+          aria-selected={activeTab === 'automations'}
+          className="tab flex items-center gap-2"
         >
-          <Zap className="w-4 h-4" />
-          <span>Automatismes & Webhooks</span>
+          <Zap className="w-3.5 h-3.5" />
+          <span>AUTOMATISMES & WEBHOOKS</span>
         </button>
       </div>
 
       {/* CONTENU ONGLETS */}
-      {activeTab === 'general' && (
-        <div className="space-y-4 animate-in fade-in">
-          {/* Espace de travail */}
-          <div className="p-5 bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-blue-50 text-[#0066FF] dark:bg-blue-950/50">
-                <Shield className="w-5 h-5" />
-              </div>
+      {activeTab === 'appearance' && (
+        <div className="space-y-6">
+          {/* Panneau de sélection de thèmes */}
+          <div className="panel space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border)]">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Espace de travail actif
+                <h3 className="panel-title mb-1 flex items-center gap-2">
+                  <Palette className="w-4 h-4 text-[var(--brand)]" />
+                  LES 4 THÈMES DE FOND DE L'APPLICATION
                 </h3>
-                <p className="text-xs text-slate-500">
-                  Identité et nom de l’organisation gestionnaire
+                <p className="text-xs text-[var(--text-muted)]">
+                  Sélectionnez la couleur de fond de tout le logiciel (Blanc, Noir, Bleu, Bleu de nuit). Le choix s’applique instantanément et s’adapte à vos préférences.
                 </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="badge badge--info text-micro">
+                  THÈME ACTIF : {themeData.label.toUpperCase()}
+                </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div>
-                <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">
+            {/* Sélecteur des 4 thèmes avec maquettes miniatures */}
+            <div className="pt-2">
+              <AppearanceSelector layout="grid" showDescriptions={true} />
+            </div>
+          </div>
+
+          {/* Démonstrateur d'éléments réactifs en direct */}
+          <div className="panel space-y-4">
+            <h3 className="panel-title mb-0">
+              <Sliders className="w-4 h-4 text-[var(--color-primary)]" />
+              APERÇU DES COMPOSANTS EN DIRECT
+            </h3>
+            <p className="text-xs text-[#AAB4C3]">
+              Visualisez le comportement immédiat des composants avec le thème actif :
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+              {/* Carte Boutons */}
+              <div className="card-inner space-y-3">
+                <div className="text-[11px] font-bold text-white uppercase font-mono">Boutons & Actions</div>
+                <div className="flex flex-col gap-2">
+                  <button className="btn btn-primary btn-sm w-full">
+                    <Sparkles className="w-3.5 h-3.5" /> Action Principale
+                  </button>
+                  <button className="btn btn-secondary btn-sm w-full">
+                    Action Secondaire
+                  </button>
+                  <button className="btn btn-outline btn-sm w-full">
+                    Contour Accent
+                  </button>
+                </div>
+              </div>
+
+              {/* Carte Formulaires & Focus */}
+              <div className="card-inner space-y-3">
+                <div className="text-[11px] font-bold text-white uppercase font-mono">Champs & Focus</div>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    defaultValue="Champ actif avec lueur"
+                    className="form-input text-xs"
+                    readOnly
+                  />
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-[#AAB4C3]">Indicateur d’état</span>
+                    <span className="status-dot status-dot--off" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Carte Badges & Rôles */}
+              <div className="card-inner space-y-3">
+                <div className="text-[11px] font-bold text-white uppercase font-mono">Badges & Rôles</div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <span className="badge-role">SUPER ADMIN</span>
+                  <span className="badge badge--bad">CRITIQUE</span>
+                  <span className="badge badge--info">INFORMATIF</span>
+                  <span className="badge badge--ok">CONFORME</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Spécification et principes de conception */}
+          <div className="panel space-y-3 bg-[#0D0D0D] border-[#303641]">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2">
+              <Check className="w-4 h-4 text-[var(--color-primary)]" />
+              Principes de la charte graphique SENTINEL GESTION
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-[#AAB4C3] pt-1">
+              <div className="p-3 rounded bg-[#101216] border border-[#303641]">
+                <strong className="text-white block mb-1">1. Base sombre unifiée</strong>
+                Les deux thèmes partagent la même base sombre (#050505 et #101216) garantissant un confort visuel maximal et un contraste parfait.
+              </div>
+              <div className="p-3 rounded bg-[#101216] border border-[#303641]">
+                <strong className="text-white block mb-1">2. Inversion sémantique</strong>
+                Le bleu et le rouge sont présents dans les deux thèmes. En Sentinel Blue, le bleu domine ; en Sentinel Red, le rouge vif prend le pas tout en conservant les touches cyan.
+              </div>
+              <div className="p-3 rounded bg-[#101216] border border-[#303641]">
+                <strong className="text-white block mb-1">3. Zéro duplication</strong>
+                Toutes les nuances reposent sur des design tokens CSS centralisés. Aucune logique métier ni donnée n'est altérée par le changement d'apparence.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'general' && (
+        <div className="space-y-4">
+          {/* Espace de travail */}
+          <div className="panel space-y-4">
+            <h3 className="panel-title mb-0">
+              <Shield className="w-4 h-4 text-red" />
+              ESPACE DE TRAVAIL ACTIF
+            </h3>
+
+            <div className="form-row text-xs">
+              <div className="form-group mb-0">
+                <label className="form-label">
                   Nom de l’espace
                 </label>
                 <input
                   type="text"
                   disabled
                   value={workspace.name}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-medium"
+                  className="form-input opacity-70"
                 />
               </div>
-              <div>
-                <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">
+              <div className="form-group mb-0">
+                <label className="form-label">
                   Identifiant d’accès (Slug)
                 </label>
                 <input
                   type="text"
                   disabled
                   value={workspace.slug}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-mono"
+                  className="form-input font-mono opacity-70"
                 />
               </div>
             </div>
           </div>
 
           {/* Préférences régionales */}
-          <div className="p-5 bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-              Préférences régionales & Fuseau horaire
+          <div className="panel space-y-4">
+            <h3 className="panel-title mb-0">
+              <Globe className="w-4 h-4 text-red" />
+              PRÉFÉRENCES RÉGIONALES & DEVISE OFFICIELLE
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-              <div>
-                <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">
+              <div className="form-group mb-0">
+                <label className="form-label">
                   Langue officielle
                 </label>
                 <input
                   type="text"
                   disabled
-                  value="Français (France)"
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-medium"
+                  value="Français (France / CEMAC)"
+                  className="form-input opacity-70"
                 />
               </div>
-              <div>
-                <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">
+              <div className="form-group mb-0">
+                <label className="form-label">
                   Fuseau horaire
                 </label>
                 <input
                   type="text"
                   disabled
-                  value={workspace.timezone || 'Europe/Paris'}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-medium"
+                  value={workspace.timezone || 'Africa/Brazzaville'}
+                  className="form-input font-mono opacity-70"
                 />
               </div>
-              <div>
-                <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">
+              <div className="form-group mb-0">
+                <label className="form-label">
                   Devise par défaut
                 </label>
                 <input
                   type="text"
                   disabled
-                  value={`${workspace.currency || 'FCFA'} (Franc CFA CEMAC - République du Congo)`}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-medium"
+                  value={`${workspace.currency || 'FCFA'} (Franc CFA CEMAC - Congo)`}
+                  className="form-input font-mono opacity-70"
                 />
               </div>
             </div>
@@ -275,98 +375,90 @@ export function SettingsView() {
       )}
 
       {activeTab === 'security' && (
-        <div className="space-y-4 animate-in fade-in">
+        <div className="space-y-4">
           {/* Politique de Sécurité */}
-          <div className="p-5 bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-red-50 text-[#FF1E27] dark:bg-red-950/50">
-                <Lock className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Contrôle d’Accès Basé sur les Rôles (RBAC)
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Hiérarchie des privilèges opérationnels
-                </p>
-              </div>
-            </div>
+          <div className="panel space-y-4">
+            <h3 className="panel-title mb-0">
+              <Lock className="w-4 h-4 text-red" />
+              CONTRÔLE D’ACCÈS BASÉ SUR LES RÔLES (RBAC)
+            </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 space-y-1">
-                <span className="font-bold text-slate-900 dark:text-white block">
+              <div className="card-inner space-y-1">
+                <span className="font-bold text-white uppercase block">
                   Propriétaire & Administrateurs ({users.filter(u => u.role === 'owner' || u.role === 'admin').length})
                 </span>
-                <p className="text-slate-500 text-[11px]">
+                <p className="text-white/45 text-micro">
                   Gestion des forfaits, suppression de projet, export total des audits et modifications structurelles.
                 </p>
               </div>
 
-              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 space-y-1">
-                <span className="font-bold text-slate-900 dark:text-white block">
+              <div className="card-inner space-y-1">
+                <span className="font-bold text-white uppercase block">
                   Chefs de Projet & Membres ({users.filter(u => u.role === 'project_manager' || u.role === 'member').length})
                 </span>
-                <p className="text-slate-500 text-[11px]">
+                <p className="text-white/45 text-micro">
                   Gestion quotidienne des tâches, pointage du temps, création de sprints et alimentation de la documentation.
                 </p>
               </div>
             </div>
 
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-              <span className="text-slate-600 dark:text-slate-400">
-                Votre session actuelle : <strong className="text-[#0066FF]">{currentUser.name}</strong> ({currentUser.jobTitle})
+            <div className="pt-2 border-t border-[#242424] flex items-center justify-between text-xs">
+              <span className="text-white/70">
+                Session active : <strong className="text-red uppercase">{currentUser.name}</strong> ({currentUser.jobTitle})
               </span>
-              <span className="text-[11px] font-mono px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                Rôle : {currentUser.role}
+              <span className="badge badge--ok text-micro">
+                RÔLE : {currentUser.role.toUpperCase()}
               </span>
             </div>
           </div>
 
-          <div className="p-5 bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Key className="w-4 h-4 text-[#0066FF]" />
-              Conformité & Intégrité Cryptographique
+          <div className="panel space-y-2">
+            <h3 className="panel-title mb-0">
+              <Key className="w-4 h-4 text-red" />
+              CONFORMITÉ & INTÉGRITÉ CRYPTOGRAPHIQUE
             </h3>
-            <p className="text-xs text-slate-500">
-              Toutes les données en transit et au repos respectent les préconisations ANSSI pour les systèmes de pilotage critique.
+            <p className="text-xs text-white/45">
+              Toutes les données en transit et au repos respectent les préconisations de sécurité pour les systèmes de pilotage critique.
             </p>
           </div>
         </div>
       )}
 
       {activeTab === 'audit' && (
-        <div className="bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden animate-in fade-in">
-          <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40 flex items-center justify-between">
+        <div className="panel space-y-4">
+          <div className="flex items-center justify-between border-b border-[#242424] pb-3">
             <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                Journal d’Audit Immuable
+              <h3 className="panel-title mb-0">
+                <Eye className="w-4 h-4 text-red" />
+                JOURNAL D’AUDIT IMMUABLE
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-white/45">
                 Traçabilité des opérations de modification et de connexion
               </p>
             </div>
-            <span className="text-xs text-[#0066FF] font-bold flex items-center gap-1">
-              <Eye className="w-3.5 h-3.5" /> Enregistrement continu
+            <span className="badge badge--ok text-micro">
+              ENREGISTREMENT CONTINU
             </span>
           </div>
 
-          <div className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+          <div className="divide-y divide-[#242424] text-xs">
             {activities.length === 0 ? (
-              <div className="py-12 text-center text-slate-400">
+              <div className="table-empty">
                 Aucun événement d’audit enregistré.
               </div>
             ) : (
               activities.map(item => (
-                <div key={item.id} className="p-4 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition">
+                <div key={item.id} className="py-3 flex items-center justify-between hover:bg-red/5 transition">
                   <div className="space-y-0.5">
-                    <span className="font-semibold text-slate-900 dark:text-white block">
+                    <span className="font-bold text-white block uppercase text-xs">
                       {item.description}
                     </span>
-                    <span className="text-[11px] text-slate-400">
-                      Par <strong>{item.userName}</strong> • Action : <code className="text-[#0066FF]">{item.actionType}</code>
+                    <span className="text-micro text-white/45">
+                      Par <strong>{item.userName}</strong> • Action : <code className="tag-mono">{item.actionType}</code>
                     </span>
                   </div>
-                  <span className="text-[11px] font-mono text-slate-400">
+                  <span className="text-micro font-mono text-white/45">
                     {formatRelativeTimeFrench(item.createdAt)}
                   </span>
                 </div>
@@ -377,27 +469,27 @@ export function SettingsView() {
       )}
 
       {activeTab === 'data' && (
-        <div className="space-y-4 animate-in fade-in">
-          {/* Persistance locale IndexedDB */}
-          <div className="p-5 bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Database className="w-4 h-4 text-[#0066FF]" />
-              Stockage Local IndexedDB (Dexie Engine)
+        <div className="space-y-4">
+          {/* Persistance locale */}
+          <div className="panel space-y-2">
+            <h3 className="panel-title mb-0">
+              <Database className="w-4 h-4 text-red" />
+              STOCKAGE LOCAL INDEXEDDB (OFFLINE-FIRST)
             </h3>
-            <p className="text-xs text-slate-500">
-              Le moteur local indexe 18 tables avec synchronisation immédiate et tolérance aux déconnexions (Offline-First).
+            <p className="text-xs text-white/45">
+              Le moteur local indexe les tables avec synchronisation immédiate et tolérance aux déconnexions.
             </p>
           </div>
 
           {/* Réinitialisation */}
-          <div className="p-5 bg-white dark:bg-[#0F172A] rounded-2xl border border-red-200 dark:border-red-900/40 shadow-sm space-y-3">
-            <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-              <ShieldAlert className="w-4 h-4" />
-              <h3 className="text-sm font-bold">
-                Zone Dangereuse : Réinitialisation d’Usine
+          <div className="panel border-red space-y-3">
+            <div className="flex items-center gap-2 text-red">
+              <ShieldAlert className="w-5 h-5 text-red" />
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                ZONE CRITIQUE : RÉINITIALISATION D’USINE
               </h3>
             </div>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-white/70">
               Rétablissez l’ensemble des projets, phases, tâches réelles, budgets, sprints et risques à leur configuration initiale d’usine.
             </p>
 
@@ -405,14 +497,14 @@ export function SettingsView() {
               <button
                 type="button"
                 onClick={() => setShowConfirmReset(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-xl transition shadow-sm"
+                className="btn btn-danger btn-sm"
               >
-                <RefreshCcw className="w-4 h-4" />
-                <span>Rétablir les données d’usine</span>
+                <RefreshCcw className="w-3.5 h-3.5 text-white" />
+                <span>RÉTABLIR LES DONNÉES D’USINE</span>
               </button>
               {resetDone && (
-                <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
-                  <CheckCircle2 className="w-4 h-4" /> Données réinitialisées avec succès !
+                <span className="badge badge--ok text-xs">
+                  <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Données réinitialisées !
                 </span>
               )}
             </div>
@@ -422,92 +514,68 @@ export function SettingsView() {
 
       {/* ONGLET AUTOMATISMES & WEBHOOKS */}
       {activeTab === 'automations' && (
-        <div className="space-y-6 animate-in fade-in">
+        <div className="space-y-4">
           {/* Règles d'Automatismes */}
-          <div className="p-5 bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-blue-50 text-[#0066FF] dark:bg-blue-950/50">
-                  <Zap className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                    Règles Actives & Déclencheurs Événementiels
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Exécution automatique d’actions réactives (« Si ceci alors cela »)
-                  </p>
-                </div>
-              </div>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-[#0066FF] border border-blue-200 dark:border-blue-900">
-                {rules.filter(r => r.enabled).length} / {rules.length} actives
+          <div className="panel space-y-4">
+            <div className="flex items-center justify-between border-b border-[#242424] pb-3">
+              <h3 className="panel-title mb-0">
+                <Zap className="w-4 h-4 text-red" />
+                RÈGLES ACTIVES & DÉCLENCHEURS ÉVÉNEMENTIELS
+              </h3>
+              <span className="badge font-mono">
+                {rules.filter(r => r.enabled).length} / {rules.length} ACTIVES
               </span>
             </div>
 
-            <div className="space-y-3 pt-2">
+            <div className="space-y-3">
               {rules.map(rule => (
                 <div 
                   key={rule.id}
-                  className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                  className="card-inner flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-900 dark:text-white">
+                      <span className="text-xs font-bold text-white uppercase tracking-wide">
                         {rule.name}
                       </span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                      <span className="tag-mono text-[10px]">
                         {rule.trigger}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                    <p className="text-micro text-white/45">
                       {rule.description}
                     </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => toggleRule(rule.id)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                      rule.enabled ? 'bg-[#0066FF]' : 'bg-slate-300 dark:bg-slate-700'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        rule.enabled ? 'translate-x-6' : 'translate-x-1'
-                      }`}
+                  <label className="switch">
+                    <input
+                      type="checkbox"
+                      checked={rule.enabled}
+                      onChange={() => toggleRule(rule.id)}
                     />
-                  </button>
+                  </label>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Connecteurs Webhooks Sortants */}
-          <div className="p-5 bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/50">
-                <BellRing className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Connecteur Webhooks Sortants (Slack / Teams / Generic)
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Diffusez instantanément les alertes et jalons vers vos canaux d’équipe
-                </p>
-              </div>
-            </div>
+          <div className="panel space-y-4">
+            <h3 className="panel-title mb-0">
+              <BellRing className="w-4 h-4 text-red" />
+              CONNECTEUR WEBHOOKS SORTANTS (SLACK / TEAMS / GÉNÉRIQUE)
+            </h3>
 
-            <div className="space-y-4 pt-2">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            <div className="space-y-4">
+              <div className="form-row">
+                <div className="form-group mb-0">
+                  <label className="form-label">
                     Plateforme Cible
                   </label>
                   <select
                     value={webhookPlatform}
                     onChange={e => setWebhookPlatform(e.target.value as 'slack' | 'teams' | 'generic')}
-                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0066FF]"
+                    className="form-select uppercase font-bold text-xs"
                   >
                     <option value="slack">Slack Incoming Webhook</option>
                     <option value="teams">Microsoft Teams MessageCard</option>
@@ -515,78 +583,72 @@ export function SettingsView() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <div className="form-group mb-0">
+                  <label className="form-label">
                     Statut du connecteur
                   </label>
-                  <div className="flex items-center gap-3 h-[38px]">
-                    <label className="relative inline-flex items-center cursor-pointer">
+                  <div className="flex items-center gap-3 h-[40px]">
+                    <label className="switch">
                       <input
                         type="checkbox"
                         checked={webhookEnabled}
                         onChange={e => setWebhookEnabled(e.target.checked)}
-                        className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0066FF]"></div>
                     </label>
-                    <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                      {webhookEnabled ? 'Actif en temps réel' : 'Désactivé'}
+                    <span className="text-xs font-bold uppercase text-white/70">
+                      {webhookEnabled ? 'ACTIF EN TEMPS RÉEL' : 'DÉSACTIVÉ'}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  URL du Webhook (Sécurisée HTTPS)
+              <div className="form-group mb-0">
+                <label className="form-label">
+                  URL du Webhook (HTTPS Sécurisée)
                 </label>
                 <input
                   type="url"
                   value={webhookUrl}
                   onChange={e => setWebhookUrl(e.target.value)}
                   placeholder="https://hooks.slack.com/services/... ou https://outlook.office.com/webhook/..."
-                  className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-[#0066FF]"
+                  className="form-input font-mono text-xs"
                 />
               </div>
 
               {testResult && (
-                <div className={`p-3 rounded-xl border text-xs flex items-center gap-2 ${
-                  testResult.success
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
-                    : 'bg-red-50 text-red-800 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800'
-                }`}>
+                <div className={testResult.success ? 'alert text-xs' : 'alert alert--error text-xs'}>
                   {testResult.success ? (
-                    <Check className="w-4 h-4 flex-shrink-0" />
+                    <Check className="w-4 h-4 mr-1 inline" />
                   ) : (
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <AlertCircle className="w-4 h-4 mr-1 inline text-red" />
                   )}
                   <span>{testResult.message}</span>
                 </div>
               )}
 
-              <div className="flex flex-wrap items-center gap-3 pt-2">
+              <div className="flex flex-wrap items-center gap-2 pt-2">
                 <button
                   type="button"
                   onClick={handleSaveWebhookConfig}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#0066FF] hover:bg-blue-600 text-white text-xs font-semibold rounded-xl transition shadow-sm"
+                  className="btn btn-primary btn-sm"
                 >
-                  <Check className="w-4 h-4" />
-                  <span>Enregistrer la configuration</span>
+                  <Check className="w-3.5 h-3.5 text-white" />
+                  <span>ENREGISTRER LA CONFIGURATION</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={handleTestWebhook}
                   disabled={testResult?.testing}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-xl transition border border-slate-200 dark:border-slate-700 disabled:opacity-50"
+                  className="btn btn-secondary btn-sm"
                 >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>{testResult?.testing ? 'Envoi en cours...' : 'Tester le Webhook'}</span>
+                  <Send className="w-3.5 h-3.5 text-red" />
+                  <span>{testResult?.testing ? 'ENVOI EN COURS...' : 'TESTER LE WEBHOOK'}</span>
                 </button>
 
                 {saveSuccess && (
-                  <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
-                    <CheckCircle2 className="w-4 h-4" /> Configuration enregistrée !
+                  <span className="badge badge--ok text-xs">
+                    <CheckCircle2 className="w-3 h-3 mr-1" /> CONFIGURATION ENREGISTRÉE !
                   </span>
                 )}
               </div>
@@ -598,7 +660,7 @@ export function SettingsView() {
       <ConfirmDialog
         isOpen={showConfirmReset}
         title="Réinitialiser les données d’usine"
-        message="Voulez-vous réinitialiser toutes les données aux valeurs d'origine ? Toutes les modifications locales (projets, tâches, finances, temps, sprints, wiki, risques) seront restaurées à leur état initial."
+        message="Voulez-vous réinitialiser toutes les données aux valeurs d'origine ? Toutes les modifications locales seront restaurées à leur état initial."
         confirmLabel="Oui, réinitialiser"
         cancelLabel="Annuler"
         variant="danger"

@@ -1,11 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { X, Calendar, User, Tag, Clock, CheckSquare, Plus, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Clock, Plus, Trash2, CheckSquare } from 'lucide-react';
 import { Task, TaskPriority, TaskStatus, ChecklistItem } from '@/types/sentinel';
 import { useSentinel } from '@/lib/store';
 import { getTodayDateString } from '@/lib/dateUtils';
 import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog';
+import { Modal } from '@/components/ui/Modal';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
+import { Select } from '@/components/ui/Select';
+import { Button } from '@/components/ui/Button';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -40,6 +45,10 @@ export function TaskModal({
   const [newChecklistText, setNewChecklistText] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // État initial pour la détection des modifications non enregistrées
+  const [initialSnapshot, setInitialSnapshot] = useState('');
 
   // Initialisation lors de l'ouverture
   useEffect(() => {
@@ -56,10 +65,22 @@ export function TaskModal({
       setEstimateHours(String((taskToEdit.estimateMinutes || 60) / 60));
       setLabelsInput(taskToEdit.labels ? taskToEdit.labels.join(', ') : '');
       setChecklist(taskToEdit.checklist || []);
+
+      setInitialSnapshot(JSON.stringify({
+        title: taskToEdit.title,
+        description: taskToEdit.description || '',
+        projectId: taskToEdit.projectId,
+        phaseId: taskToEdit.phaseId || '',
+        status: taskToEdit.status,
+        priority: taskToEdit.priority,
+        assigneeId: taskToEdit.assigneeId || '',
+        estimateHours: String((taskToEdit.estimateMinutes || 60) / 60),
+      }));
     } else {
+      const defaultPrjId = activeProjectId !== 'all' ? activeProjectId : (projects[0]?.id || '');
       setTitle('');
       setDescription('');
-      setProjectId(activeProjectId !== 'all' ? activeProjectId : (projects[0]?.id || ''));
+      setProjectId(defaultPrjId);
       setPhaseId('');
       setStatus(defaultStatus);
       setPriority('medium');
@@ -69,9 +90,37 @@ export function TaskModal({
       setEstimateHours('4');
       setLabelsInput('');
       setChecklist([]);
+
+      setInitialSnapshot(JSON.stringify({
+        title: '',
+        description: '',
+        projectId: defaultPrjId,
+        phaseId: '',
+        status: defaultStatus,
+        priority: 'medium',
+        assigneeId: users[0]?.id || '',
+        estimateHours: '4',
+      }));
     }
     setErrorMsg('');
+    setIsSubmitting(false);
   }, [isOpen, taskToEdit, defaultStatus, activeProjectId, projects, users]);
+
+  // Détection des modifications
+  const isDirty = useMemo(() => {
+    if (!isOpen) return false;
+    const current = JSON.stringify({
+      title,
+      description,
+      projectId,
+      phaseId,
+      status,
+      priority,
+      assigneeId,
+      estimateHours,
+    });
+    return current !== initialSnapshot;
+  }, [isOpen, initialSnapshot, title, description, projectId, phaseId, status, priority, assigneeId, estimateHours]);
 
   if (!isOpen) return null;
 
@@ -98,8 +147,8 @@ export function TaskModal({
     setChecklist(prev => prev.filter(c => c.id !== id));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!title.trim()) {
       setErrorMsg('Le titre de la tâche est obligatoire.');
       return;
@@ -109,6 +158,8 @@ export function TaskModal({
       return;
     }
 
+    setIsSubmitting(true);
+
     const labels = labelsInput
       .split(',')
       .map(s => s.trim())
@@ -117,39 +168,44 @@ export function TaskModal({
     const parsedHours = parseFloat(estimateHours) || 1;
     const estimateMinutes = Math.round(parsedHours * 60);
 
-    if (taskToEdit) {
-      updateTask(taskToEdit.id, {
-        title: title.trim(),
-        description: description.trim(),
-        projectId,
-        phaseId: phaseId || undefined,
-        status,
-        priority,
-        assigneeId: assigneeId || undefined,
-        startDate: startDate || undefined,
-        dueDate: dueDate || undefined,
-        estimateMinutes,
-        labels,
-        checklist,
-      });
-    } else {
-      createTask({
-        title: title.trim(),
-        description: description.trim(),
-        projectId,
-        phaseId: phaseId || undefined,
-        status,
-        priority,
-        assigneeId: assigneeId || undefined,
-        startDate: startDate || undefined,
-        dueDate: dueDate || undefined,
-        estimateMinutes,
-        labels,
-        checklist,
-      });
+    try {
+      if (taskToEdit) {
+        updateTask(taskToEdit.id, {
+          title: title.trim(),
+          description: description.trim(),
+          projectId,
+          phaseId: phaseId || undefined,
+          status,
+          priority,
+          assigneeId: assigneeId || undefined,
+          startDate: startDate || undefined,
+          dueDate: dueDate || undefined,
+          estimateMinutes,
+          labels,
+          checklist,
+        });
+      } else {
+        createTask({
+          title: title.trim(),
+          description: description.trim(),
+          projectId,
+          phaseId: phaseId || undefined,
+          status,
+          priority,
+          assigneeId: assigneeId || undefined,
+          startDate: startDate || undefined,
+          dueDate: dueDate || undefined,
+          estimateMinutes,
+          labels,
+          checklist,
+        });
+      }
+      onClose();
+    } catch {
+      setErrorMsg('Une erreur inattendue est survenue.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    onClose();
   };
 
   const handleConfirmDelete = () => {
@@ -161,249 +217,215 @@ export function TaskModal({
   };
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
-      role="dialog"
-      aria-modal="true"
-    >
-      <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh] overflow-hidden">
-        {/* En-tête */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-              {taskToEdit ? 'Modifier la tâche' : 'Nouvelle tâche'}
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Renseignez les paramètres et l’échéance pour le suivi de projet
-            </p>
+    <>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        variant="drawer"
+        hasUnsavedChanges={isDirty}
+        title={taskToEdit ? 'Modifier la tâche' : 'Nouvelle tâche'}
+        subtitle="Renseignez les paramètres et l’échéance pour le suivi de projet"
+        icon={<CheckSquare className="w-4 h-4 text-[var(--brand)]" />}
+        footer={
+          <div className="w-full flex items-center justify-between">
+            <div>
+              {taskToEdit && (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  data-testid="btn-task-delete"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  icon={<Trash2 className="w-3.5 h-3.5" />}
+                >
+                  SUPPRIMER
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={onClose}
+              >
+                ANNULER
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                data-testid="btn-task-submit"
+                loading={isSubmitting}
+                onClick={() => handleSubmit()}
+              >
+                {taskToEdit ? 'ENREGISTRER' : 'CRÉER LA TÂCHE'}
+              </Button>
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Formulaire */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
+        }
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
           {errorMsg && (
-            <div className="p-3 text-xs rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200 dark:border-rose-800 font-medium">
+            <div className="alert alert--error text-xs font-bold p-3 rounded-[var(--r-sm)]">
               {errorMsg}
             </div>
           )}
 
           {/* Titre */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Titre de la tâche <span className="text-rose-500">*</span>
-            </label>
-            <input
-              type="text"
-              data-testid="input-task-title"
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex: Refonte du module d'authentification..."
-              className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0066FF] text-slate-900 dark:text-white placeholder:text-slate-400"
-            />
-          </div>
+          <Input
+            label="Titre de la tâche"
+            required
+            data-testid="input-task-title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Ex: Refonte du module d'authentification..."
+            error={!title.trim() && errorMsg ? 'Le titre est requis' : undefined}
+          />
 
           {/* Projet et Phase */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Projet associé <span className="text-rose-500">*</span>
-              </label>
-              <select
-                value={projectId}
-                onChange={(e) => {
-                  setProjectId(e.target.value);
-                  setPhaseId('');
-                }}
-                className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0066FF] text-slate-900 dark:text-white"
-              >
-                {projects.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Projet associé"
+              required
+              value={projectId}
+              onChange={(e) => {
+                setProjectId(e.target.value);
+                setPhaseId('');
+              }}
+            >
+              {projects.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </Select>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Phase du projet (optionnel)
-              </label>
-              <select
-                value={phaseId}
-                onChange={(e) => setPhaseId(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0066FF] text-slate-900 dark:text-white"
-              >
-                <option value="">Aucune phase particulière</option>
-                {projectPhases.map(ph => (
-                  <option key={ph.id} value={ph.id}>
-                    Phase {ph.order} : {ph.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Phase du projet (optionnel)"
+              value={phaseId}
+              onChange={(e) => setPhaseId(e.target.value)}
+            >
+              <option value="">Aucune phase particulière</option>
+              {projectPhases.map(ph => (
+                <option key={ph.id} value={ph.id}>
+                  Phase {ph.order} : {ph.name}
+                </option>
+              ))}
+            </Select>
           </div>
 
           {/* Statut & Priorité */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Statut initial
-              </label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as TaskStatus)}
-                className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0066FF] text-slate-900 dark:text-white"
-              >
-                <option value="todo">À faire</option>
-                <option value="in_progress">En cours</option>
-                <option value="in_review">En revue</option>
-                <option value="done">Terminé</option>
-              </select>
-            </div>
+            <Select
+              label="Statut initial"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as TaskStatus)}
+            >
+              <option value="todo">À FAIRE</option>
+              <option value="in_progress">EN COURS</option>
+              <option value="in_review">EN REVUE</option>
+              <option value="done">TERMINÉ</option>
+            </Select>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Priorité
-              </label>
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0066FF] text-slate-900 dark:text-white"
-              >
-                <option value="urgent">🔴 Urgente</option>
-                <option value="high">🟠 Haute</option>
-                <option value="medium">🟡 Moyenne</option>
-                <option value="low">🟢 Basse</option>
-              </select>
-            </div>
+            <Select
+              label="Priorité"
+              value={priority}
+              onChange={(e) => setPriority(e.target.value as TaskPriority)}
+            >
+              <option value="urgent">URGENTE</option>
+              <option value="high">HAUTE</option>
+              <option value="medium">MOYENNE</option>
+              <option value="low">BASSE</option>
+            </Select>
           </div>
 
           {/* Responsable & Estimation */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Intervenant assigné
-              </label>
-              <select
-                value={assigneeId}
-                onChange={(e) => setAssigneeId(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0066FF] text-slate-900 dark:text-white"
-              >
-                <option value="">Non assigné</option>
-                {users.map(u => (
-                  <option key={u.id} value={u.id}>
-                    {u.name} ({u.jobTitle})
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Intervenant assigné"
+              value={assigneeId}
+              onChange={(e) => setAssigneeId(e.target.value)}
+            >
+              <option value="">Non assigné</option>
+              {users.map(u => (
+                <option key={u.id} value={u.id}>
+                  {u.name} ({u.jobTitle})
+                </option>
+              ))}
+            </Select>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Charge estimée (heures)
-              </label>
-              <div className="relative">
-                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  type="number"
-                  min="0.5"
-                  step="0.5"
-                  value={estimateHours}
-                  onChange={(e) => setEstimateHours(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0066FF] text-slate-900 dark:text-white"
-                />
-              </div>
-            </div>
+            <Input
+              label="Charge estimée (heures)"
+              type="number"
+              min="0.5"
+              step="0.5"
+              value={estimateHours}
+              onChange={(e) => setEstimateHours(e.target.value)}
+              leftIcon={<Clock className="w-4 h-4 text-[var(--brand)]" />}
+              className="font-mono font-bold"
+            />
           </div>
 
           {/* Dates de début et fin */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Date de début
-              </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0066FF] text-slate-900 dark:text-white"
-              />
-            </div>
+            <Input
+              label="Date de début"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="font-mono"
+            />
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Échéance limite (Fin)
-              </label>
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0066FF] text-slate-900 dark:text-white"
-              />
-            </div>
+            <Input
+              label="Échéance limite (Fin)"
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="font-mono"
+            />
           </div>
 
           {/* Étiquettes */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Étiquettes (séparées par une virgule)
-            </label>
-            <input
-              type="text"
-              value={labelsInput}
-              onChange={(e) => setLabelsInput(e.target.value)}
-              placeholder="Ex: Frontend, Sécurité, Sprint-1, Prioritaire"
-              className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0066FF] text-slate-900 dark:text-white placeholder:text-slate-400"
-            />
-          </div>
+          <Input
+            label="Étiquettes (séparées par une virgule)"
+            value={labelsInput}
+            onChange={(e) => setLabelsInput(e.target.value)}
+            placeholder="Ex: Frontend, Sécurité, Sprint-1, Prioritaire"
+          />
 
           {/* Description */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Description & Critères de succès
-            </label>
-            <textarea
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Précisez le contexte, les livrables attendus et les consignes..."
-              className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0066FF] text-slate-900 dark:text-white placeholder:text-slate-400"
-            />
-          </div>
+          <Textarea
+            label="Description & Critères de succès"
+            rows={3}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Précisez le contexte, les livrables attendus et les consignes..."
+          />
 
           {/* Checklist / Liste de contrôle */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
+          <div className="space-y-2 pt-2 border-t border-[var(--border)]">
+            <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text)] block">
               Liste de contrôle (Checklist d’avancement)
             </label>
             <div className="space-y-1.5 mb-2">
               {checklist.map((item) => (
                 <div 
                   key={item.id} 
-                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800"
+                  className="flex items-center gap-2 p-2 rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--surface-2)]"
                 >
                   <input
                     type="checkbox"
                     checked={item.isCompleted}
                     onChange={() => handleToggleChecklist(item.id)}
-                    className="w-4 h-4 rounded text-[#0066FF] focus:ring-blue-500"
+                    className="w-4 h-4 rounded border-[var(--border)] text-[var(--brand)] cursor-pointer"
                   />
-                  <span className={`text-xs flex-1 ${item.isCompleted ? 'line-through text-slate-400' : 'text-slate-700 dark:text-slate-200'}`}>
+                  <span className={`text-xs flex-1 ${item.isCompleted ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text)]'}`}>
                     {item.title}
                   </span>
                   <button
                     type="button"
                     onClick={() => handleRemoveChecklist(item.id)}
-                    className="text-slate-400 hover:text-rose-500"
+                    className="p-1 rounded text-[var(--text-muted)] hover:text-[var(--button-danger-bg)] transition-colors"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               ))}
@@ -421,53 +443,20 @@ export function TaskModal({
                   }
                 }}
                 placeholder="Ajouter un sous-objectif à cocher..."
-                className="flex-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0066FF] text-slate-900 dark:text-white"
+                className="form-input flex-1 text-xs"
               />
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={handleAddChecklistItem}
-                className="px-3 py-1.5 text-xs font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg transition"
+                icon={<Plus className="w-3.5 h-3.5" />}
               >
-                Ajouter
-              </button>
+                AJOUTER
+              </Button>
             </div>
           </div>
         </form>
-
-        {/* Pied de modal */}
-        <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 flex items-center justify-between">
-          <div>
-            {taskToEdit && (
-              <button
-                type="button"
-                data-testid="btn-task-delete"
-                onClick={() => setShowDeleteConfirm(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Supprimer
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl transition"
-            >
-              Annuler
-            </button>
-            <button
-              type="button"
-              data-testid="btn-task-submit"
-              onClick={handleSubmit}
-              className="px-5 py-2 text-xs font-semibold text-white bg-[#0066FF] hover:bg-blue-700 rounded-xl shadow-md transition"
-            >
-              {taskToEdit ? 'Enregistrer les modifications' : 'Créer la tâche'}
-            </button>
-          </div>
-        </div>
-      </div>
+      </Modal>
 
       <ConfirmDialog
         isOpen={showDeleteConfirm}
@@ -479,6 +468,6 @@ export function TaskModal({
         onConfirm={handleConfirmDelete}
         onCancel={() => setShowDeleteConfirm(false)}
       />
-    </div>
+    </>
   );
 }

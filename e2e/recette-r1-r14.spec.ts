@@ -25,7 +25,7 @@ test.describe('SENTINEL GESTION — Recette Fonctionnelle R1 à R14 (Phase A - A
 
     // Compte les éléments de tâches visibles dans le tableau de bord
     const taskRows = page.locator('div:has-text("À surveiller en priorité")');
-    await expect(taskRows).toBeVisible();
+    await expect(taskRows.first()).toBeVisible();
   });
 
   // R2: Créer un projet depuis un modèle
@@ -220,8 +220,8 @@ test.describe('SENTINEL GESTION — Recette Fonctionnelle R1 à R14 (Phase A - A
 
     // Onglet Collaborateurs & Rôles
     await page.locator('[data-testid="tab-team-roles"]').click();
-    await expect(page.locator('text=Propriétaire')).toBeVisible();
-    await expect(page.locator('text=Membre')).toBeVisible();
+    await expect(page.locator('text=Propriétaire').first()).toBeVisible();
+    await expect(page.locator('text=Membre').first()).toBeVisible();
   });
 
   // R11: Conflit et réconciliation de données
@@ -255,6 +255,7 @@ test.describe('SENTINEL GESTION — Recette Fonctionnelle R1 à R14 (Phase A - A
     await expect(page.locator('text=Centre d’Exportation')).toHaveCount(0);
 
     // 3. Ouverture de la modale Sécurité
+    await page.locator('[data-testid="btn-tools-menu"]').click();
     await page.locator('[data-testid="btn-security-modal"]').click();
     await expect(page.locator('text=Sécurité & Conformité RGPD')).toBeVisible();
     await page.keyboard.press('Escape');

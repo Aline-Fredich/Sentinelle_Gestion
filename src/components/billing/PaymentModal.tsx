@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, ShieldCheck, Smartphone, CheckCircle2, AlertCircle, 
-  Loader2, ArrowRight, Download, Receipt, PhoneCall, Sparkles, Building2
+  Loader2, ArrowRight, Download, Receipt, PhoneCall
 } from 'lucide-react';
 import { useSentinel } from '@/lib/store';
 import { SubscriptionPlan, PaymentTransaction } from '@/types/sentinel';
@@ -81,8 +81,9 @@ export function PaymentModal({ isOpen, onClose, targetPlan, billingCycle }: Paym
       setActiveTransaction(tx);
       setStep('ussd_pending');
       setCountdown(45);
-    } catch (err: any) {
-      setPhoneError(err.message || 'Impossible d’initialiser le paiement.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Impossible d’initialiser le paiement.';
+      setPhoneError(msg);
     } finally {
       setIsLoading(false);
     }
@@ -105,8 +106,8 @@ export function PaymentModal({ isOpen, onClose, targetPlan, billingCycle }: Paym
       );
 
       setStep('success');
-    } catch (err: any) {
-      console.error(err);
+    } catch (err: unknown) {
+      console.error('Erreur confirmation paiement:', err);
     }
   };
 
@@ -115,98 +116,94 @@ export function PaymentModal({ isOpen, onClose, targetPlan, billingCycle }: Paym
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="modal-overlay" onClick={onClose}>
       <div 
-        className="w-full max-w-lg bg-white dark:bg-[#1C1C1E] rounded-3xl border border-black/10 dark:border-white/10 shadow-[0_24px_70px_rgba(0,0,0,0.25)] overflow-hidden"
+        className="modal modal--sm max-w-lg"
         onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
       >
-        {/* En-tête macOS Apple */}
-        <div className="px-6 py-4 border-b border-black/5 dark:border-white/10 flex items-center justify-between bg-[#F5F5F7]/90 dark:bg-[#2C2C2E]/60 backdrop-blur-md">
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-[#FF5F56] border border-[#E0443E]" />
-              <span className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123]" />
-              <span className="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29]" />
-            </div>
-            <div className="h-4 w-[1px] bg-black/10 dark:bg-white/10 mx-1" />
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                Paiement Mobile Money • Congo (+242)
-              </span>
-            </div>
+        {/* En-tête de la modale */}
+        <div className="flex items-center justify-between pb-3 border-b border-[#242424] mb-4">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-red shadow-[var(--glow-sm)]" />
+            <h2 className="modal-title mb-0">
+              PAIEMENT MOBILE MONEY • CONGO (+242)
+            </h2>
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10 transition"
+            className="btn btn-ghost btn-sm p-1"
+            aria-label="Fermer"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4 text-white/70" />
           </button>
         </div>
 
         {/* Corps */}
-        <div className="p-6 space-y-6">
+        <div className="space-y-4">
           {/* Étape 1 : Formulaire de paiement */}
           {step === 'input' && (
-            <form onSubmit={handleInitiate} className="space-y-5">
+            <form onSubmit={handleInitiate} className="space-y-4">
               {/* Opérateur sélectionné */}
-              <div className="p-4 rounded-2xl bg-[#FFCC00]/15 dark:bg-[#FFCC00]/10 border border-[#FFCC00]/40 flex items-center justify-between">
+              <div className="card-inner flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-[#FFCC00] text-black font-black flex items-center justify-center text-sm shadow-sm">
-                    MTN
+                  <div className="w-10 h-10 rounded-[6px] border border-red bg-red/10 text-white font-mono font-bold flex items-center justify-center text-xs">
+                    MOMO
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <div className="text-xs font-bold text-white flex items-center gap-2 uppercase tracking-wide">
                       <span>MTN Mobile Money Congo</span>
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-[#FFCC00] text-black">
-                        Direct
+                      <span className="badge badge--ok text-[9px] py-0 px-1">
+                        DIRECT
                       </span>
                     </div>
-                    <div className="text-[11px] text-slate-600 dark:text-slate-400">
+                    <div className="text-micro text-white/45">
                       Règlement instantané en Francs CFA CEMAC (XAF)
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs font-extrabold text-[#34C759] flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    256-bit SSL
+                  <span className="badge badge--ok text-[10px]">
+                    <ShieldCheck className="w-3 h-3 mr-1" />
+                    256-BIT SSL
                   </span>
                 </div>
               </div>
 
               {/* Récapitulatif Commande */}
-              <div className="p-4 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E] border border-black/5 dark:border-white/10 space-y-2.5">
+              <div className="card-inner space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-500 dark:text-slate-400">Forfait sélectionné :</span>
-                  <span className="font-bold text-slate-900 dark:text-white">{targetPlan.name}</span>
+                  <span className="text-white/45 uppercase tracking-wider font-bold text-micro">Forfait sélectionné :</span>
+                  <span className="font-bold text-white uppercase">{targetPlan.name}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-500 dark:text-slate-400">Période de facturation :</span>
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">
-                    {billingCycle === 'yearly' ? 'Annuelle (avec remise -20%)' : 'Mensuelle'}
+                  <span className="text-white/45 uppercase tracking-wider font-bold text-micro">Période :</span>
+                  <span className="font-bold text-white">
+                    {billingCycle === 'yearly' ? 'ANNUELLE (-20%)' : 'MENSUELLE'}
                   </span>
                 </div>
-                <div className="pt-2 border-t border-black/5 dark:border-white/10 flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-900 dark:text-white">Montant total TTC :</span>
-                  <span className="text-lg font-black text-[#0071E3] dark:text-[#2997FF]">
+                <div className="pt-2 border-t border-[#242424] flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-white">Total à régler :</span>
+                  <span className="text-lg font-mono font-bold text-red">
                     {formatCurrency(finalAmount, 'XAF')}
                   </span>
                 </div>
               </div>
 
               {/* Saisie Numéro Téléphone MTN */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+              <div className="form-group mb-0">
+                <label className="form-label flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
-                    <Smartphone className="w-3.5 h-3.5 text-[#0071E3]" />
+                    <Smartphone className="w-3.5 h-3.5 text-red" />
                     Numéro de téléphone MTN Mobile Money
                   </span>
-                  <span className="text-[11px] text-slate-400">Congo (+242)</span>
+                  <span className="tag-mono text-white/45">Congo (+242)</span>
                 </label>
-                <div className="relative">
-                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">
+                <div className="input-group">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-red pointer-events-none">
                     +242
-                  </div>
+                  </span>
                   <input
                     type="tel"
                     required
@@ -216,18 +213,19 @@ export function PaymentModal({ isOpen, onClose, targetPlan, billingCycle }: Paym
                       setPhoneError('');
                     }}
                     placeholder="06 600 00 00"
-                    className="apple-input w-full pl-16 text-sm font-semibold tracking-wider"
+                    className="form-input pl-14 font-mono font-bold"
                   />
                 </div>
-                {phoneError && (
-                  <p className="text-[11px] text-red-500 flex items-center gap-1 font-medium">
-                    <AlertCircle className="w-3 h-3" />
-                    {phoneError}
+                {phoneError ? (
+                  <p className="form-error">
+                    <AlertCircle className="w-3.5 h-3.5 text-red" />
+                    <span>{phoneError}</span>
+                  </p>
+                ) : (
+                  <p className="form-hint">
+                    Numéro débutant par 06 (064, 065, 066, 068, 069).
                   </p>
                 )}
-                <p className="text-[11px] text-slate-400">
-                  Composez un numéro commençant par 06 (064, 065, 066, 068, 069).
-                </p>
               </div>
 
               {/* Bouton de validation */}
@@ -235,17 +233,17 @@ export function PaymentModal({ isOpen, onClose, targetPlan, billingCycle }: Paym
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="apple-btn-primary w-full py-3 text-xs font-bold flex items-center justify-center gap-2"
+                  className="btn btn-primary btn-block"
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Connexion au réseau MTN Congo...</span>
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span>CONNEXION AU RÉSEAU MTN CONGO...</span>
                     </>
                   ) : (
                     <>
-                      <span>Payer {formatCurrency(finalAmount, 'XAF')} via MTN MoMo</span>
-                      <ArrowRight className="w-4 h-4" />
+                      <span>PAYER {formatCurrency(finalAmount, 'XAF')} VIA MOMO</span>
+                      <ArrowRight className="w-4 h-4 text-white" />
                     </>
                   )}
                 </button>
@@ -255,39 +253,39 @@ export function PaymentModal({ isOpen, onClose, targetPlan, billingCycle }: Paym
 
           {/* Étape 2 : En attente de validation USSD */}
           {step === 'ussd_pending' && activeTransaction && (
-            <div className="space-y-6 text-center py-2">
-              <div className="w-16 h-16 rounded-full bg-[#FFCC00]/20 border-2 border-[#FFCC00] flex items-center justify-center mx-auto text-[#DEA123] animate-pulse">
-                <PhoneCall className="w-8 h-8" />
+            <div className="space-y-4 text-center py-2">
+              <div className="w-14 h-14 rounded-[8px] border-2 border-red bg-red/10 flex items-center justify-center mx-auto text-red shadow-[0_0_16px_rgba(255,0,0,0.4)] animate-pulse">
+                <PhoneCall className="w-7 h-7 text-red" />
               </div>
 
-              <div className="space-y-1.5">
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  Autorisation requise sur votre téléphone
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                  AUTORISATION REQUISE SUR VOTRE TÉLÉPHONE
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                <p className="text-xs text-white/70 max-w-sm mx-auto">
                   Une invite de validation MTN a été envoyée au{' '}
-                  <span className="font-bold text-slate-800 dark:text-slate-200">
+                  <span className="font-mono font-bold text-white">
                     {activeTransaction.phoneNumber}
                   </span>
-                  . Composez le code PIN pour autoriser le paiement de{' '}
-                  <span className="font-bold text-[#0071E3] dark:text-[#2997FF]">
+                  . Composez votre code secret PIN pour débiter{' '}
+                  <span className="font-mono font-bold text-red">
                     {formatCurrency(finalAmount, 'XAF')}
                   </span>
                   .
                 </p>
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E] border border-black/5 dark:border-white/10 text-xs space-y-1 text-left">
+              <div className="card-inner text-xs space-y-1.5 text-left font-mono">
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Référence transaction :</span>
-                  <span className="font-mono font-bold text-slate-700 dark:text-slate-300">
+                  <span className="text-white/45">RÉFÉRENCE :</span>
+                  <span className="text-white font-bold">
                     {activeTransaction.reference}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Temps restant :</span>
-                  <span className="font-bold text-amber-600 dark:text-amber-400">
-                    {countdown} secondes
+                  <span className="text-white/45">TEMPS RESTANT :</span>
+                  <span className="text-red font-bold">
+                    {countdown} SECONDES
                   </span>
                 </div>
               </div>
@@ -297,18 +295,18 @@ export function PaymentModal({ isOpen, onClose, targetPlan, billingCycle }: Paym
                 <button
                   type="button"
                   onClick={handleSimulateApproval}
-                  className="apple-btn-primary w-full py-3 text-xs font-bold flex items-center justify-center gap-2 bg-[#34C759] hover:bg-[#2EB04E] text-white"
+                  className="btn btn-primary btn-block"
                 >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Confirmer la saisie du code PIN (Validation MoMo)</span>
+                  <CheckCircle2 className="w-4 h-4 text-white" />
+                  <span>SIMULER LA CONFIRMATION DU PIN (VALIDATION MOMO)</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setStep('input')}
-                  className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                  className="btn btn-ghost btn-sm"
                 >
-                  Modifier le numéro de téléphone
+                  MODIFIER LE NUMÉRO DE TÉLÉPHONE
                 </button>
               </div>
             </div>
@@ -316,87 +314,87 @@ export function PaymentModal({ isOpen, onClose, targetPlan, billingCycle }: Paym
 
           {/* Étape 3 : Paiement réussi & Reçu */}
           {step === 'success' && activeTransaction && (
-            <div className="space-y-6 text-center py-2 animate-in zoom-in-95 duration-200">
-              <div className="w-16 h-16 rounded-full bg-[#34C759]/15 border-2 border-[#34C759] flex items-center justify-center mx-auto text-[#34C759]">
-                <CheckCircle2 className="w-8 h-8" />
+            <div className="space-y-4 text-center py-2">
+              <div className="w-14 h-14 rounded-[8px] border-2 border-white bg-white/10 flex items-center justify-center mx-auto text-white">
+                <CheckCircle2 className="w-7 h-7 text-white" />
               </div>
 
               <div className="space-y-1">
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  Paiement MTN Mobile Money Validé !
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                  PAIEMENT MTN MOBILE MONEY VALIDÉ !
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Votre espace SENTINEL GESTION a été mis à niveau avec succès vers l’offre{' '}
-                  <span className="font-bold text-[#0071E3] dark:text-[#2997FF]">{targetPlan.name}</span>.
+                <p className="text-xs text-white/70">
+                  Votre espace SENTINELLE DE GESTION est maintenant à jour avec le forfait{' '}
+                  <span className="font-bold text-red">{targetPlan.name}</span>.
                 </p>
               </div>
 
               {/* Reçu officiel imprimable */}
-              <div className="p-5 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E] border border-black/5 dark:border-white/10 text-left space-y-3 font-mono text-[11px]">
-                <div className="flex items-center justify-between border-b border-black/5 dark:border-white/10 pb-2">
-                  <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
-                    <Receipt className="w-3.5 h-3.5 text-[#0071E3]" />
+              <div className="card-inner text-left space-y-2 font-mono text-[11px]">
+                <div className="flex items-center justify-between border-b border-[#242424] pb-2">
+                  <div className="flex items-center gap-1.5 font-bold text-white">
+                    <Receipt className="w-3.5 h-3.5 text-red" />
                     <span>REÇU OFFICIEL DE FACTURATION</span>
                   </div>
-                  <span className="text-[#34C759] font-bold">PAYÉ</span>
+                  <span className="badge badge--ok">PAYÉ</span>
                 </div>
 
-                <div className="space-y-1 text-slate-600 dark:text-slate-300">
+                <div className="space-y-1 text-white/70">
                   <div className="flex justify-between">
-                    <span>N° de Reçu :</span>
-                    <span className="font-bold">{activeTransaction.receiptNumber}</span>
+                    <span>N° DE REÇU :</span>
+                    <span className="font-bold text-white">{activeTransaction.receiptNumber}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Réf. MTN Congo :</span>
-                    <span className="font-bold">{activeTransaction.reference}</span>
+                    <span>RÉF. MTN CONGO :</span>
+                    <span className="font-bold text-white">{activeTransaction.reference}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Date & Heure :</span>
+                    <span>DATE & HEURE :</span>
                     <span>{new Date().toLocaleString('fr-CG')}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Souscripteur :</span>
-                    <span>{currentUser.name}</span>
+                    <span>SOUSCRIPTEUR :</span>
+                    <span className="text-white">{currentUser.name}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Téléphone débiteur :</span>
-                    <span>{activeTransaction.phoneNumber}</span>
+                    <span>DÉBITEUR :</span>
+                    <span className="text-white">{activeTransaction.phoneNumber}</span>
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-black/5 dark:border-white/10 flex justify-between font-bold text-xs text-slate-900 dark:text-white">
-                  <span>Total Réglé :</span>
-                  <span className="text-[#0071E3] dark:text-[#2997FF]">
+                <div className="pt-2 border-t border-[#242424] flex justify-between font-bold text-xs text-white">
+                  <span>TOTAL RÉGLÉ :</span>
+                  <span className="text-red">
                     {formatCurrency(finalAmount, 'XAF')}
                   </span>
                 </div>
               </div>
 
               {/* Actions finales */}
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-2 pt-2">
                 <button
                   type="button"
                   onClick={handlePrintReceipt}
-                  className="apple-btn-secondary flex-1 py-2.5 text-xs font-semibold flex items-center justify-center gap-2"
+                  className="btn btn-secondary flex-1"
                 >
-                  <Download className="w-4 h-4" />
-                  <span>Imprimer le reçu</span>
+                  <Download className="w-4 h-4 text-red" />
+                  <span>IMPRIMER LE REÇU</span>
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="apple-btn-primary flex-1 py-2.5 text-xs font-bold"
+                  className="btn btn-primary flex-1"
                 >
-                  Accéder à mes projets
+                  <span>TERMINER</span>
                 </button>
               </div>
             </div>
           )}
 
           {/* Pied de page de sécurité */}
-          <div className="pt-2 text-center border-t border-black/5 dark:border-white/10">
-            <span className="text-[11px] text-slate-400 flex items-center justify-center gap-1">
-              <ShieldCheck className="w-3 h-3 text-[#34C759]" />
+          <div className="pt-2 text-center border-t border-[#242424]">
+            <span className="text-micro text-white/45 flex items-center justify-center gap-1.5">
+              <ShieldCheck className="w-3 h-3 text-red" />
               Transactions auditées • Idempotence garantie & Chiffrement de bout en bout
             </span>
           </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Layers, Calendar, Clock, DollarSign, User, Shield, CheckCircle2 } from 'lucide-react';
+import { X, Layers, Calendar, Clock, DollarSign, Shield, CheckCircle2 } from 'lucide-react';
 import { useSentinel } from '@/lib/store';
 import { Project, ProjectPriority, ProjectStatus } from '@/types/sentinel';
 
@@ -64,123 +64,118 @@ export function EditProjectModal({ isOpen, onClose, project }: EditProjectModalP
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="modal-overlay" onClick={onClose}>
       <div 
-        className="w-full max-w-2xl bg-white dark:bg-[#1C1C1E] rounded-3xl border border-black/10 dark:border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.18)] overflow-hidden"
+        className="modal max-w-2xl"
         onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
       >
-        {/* En-tête macOS Apple */}
-        <div className="px-6 py-4 border-b border-black/5 dark:border-white/10 flex items-center justify-between bg-[#F5F5F7]/80 dark:bg-[#2C2C2E]/60 backdrop-blur-md">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-[#FF5F56] border border-[#E0443E]" />
-              <span className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123]" />
-              <span className="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29]" />
-            </div>
-            <div className="h-4 w-[1px] bg-black/10 dark:bg-white/10 mx-1" />
-            <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-[#0071E3] dark:text-[#2997FF]" />
-              <h2 className="text-sm font-semibold tracking-tight text-slate-900 dark:text-white">
-                Éditer le Projet • {project.reference}
-              </h2>
-            </div>
+        {/* En-tête Modale */}
+        <div className="flex items-center justify-between pb-4 border-b border-[var(--line)] mb-5">
+          <div className="flex items-center gap-2.5">
+            <Layers className="w-5 h-5 text-[var(--red)]" />
+            <h2 className="modal-title mb-0">
+              ÉDITER LE PROJET • <span className="font-mono text-[var(--red)]">{project.reference}</span>
+            </h2>
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10 transition"
+            className="btn btn-ghost btn-icon btn-sm"
+            aria-label="Fermer la modale"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Formulaire */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* Nom & Référence */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="sm:col-span-2 space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Nom du Projet
+            <div className="sm:col-span-2 form-group mb-0">
+              <label className="form-label">
+                Nom du Projet <span className="req">*</span>
               </label>
               <input
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
                 required
-                className="apple-input w-full"
+                className="form-input"
                 placeholder="Ex : Refonte Plateforme Digitale"
               />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <div className="form-group mb-0">
+              <label className="form-label">
                 Référence
               </label>
               <input
                 type="text"
                 value={reference}
                 onChange={e => setReference(e.target.value)}
-                className="apple-input w-full font-mono text-xs uppercase"
+                className="form-input font-mono uppercase"
                 placeholder="PRJ-SNT-01"
               />
             </div>
           </div>
 
           {/* Description */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+          <div className="form-group mb-0">
+            <label className="form-label">
               Description & Objectifs Stratégiques
             </label>
             <textarea
               rows={3}
               value={description}
               onChange={e => setDescription(e.target.value)}
-              className="apple-input w-full resize-none text-xs"
+              className="form-textarea"
               placeholder="Décrivez les attendus clés, le contexte et la finalité du projet..."
             />
           </div>
 
           {/* Statut, Priorité & Administrateur Responsable */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <div className="form-group mb-0">
+              <label className="form-label">
                 Statut
               </label>
               <select
                 value={status}
                 onChange={e => setStatus(e.target.value as ProjectStatus)}
-                className="apple-input w-full text-xs font-medium"
+                className="form-select font-mono"
               >
-                <option value="active">🟢 En cours / Actif</option>
-                <option value="draft">🟡 Brouillon / Cadrage</option>
-                <option value="on_hold">🟠 En pause / Suspendu</option>
-                <option value="completed">🔵 Clôturé / Terminé</option>
-                <option value="archived">⚪ Archivé</option>
+                <option value="active">ACTIF / EN COURS</option>
+                <option value="draft">BROUILLON / CADRAGE</option>
+                <option value="on_hold">SUSPENDU / EN PAUSE</option>
+                <option value="completed">CLÔTURÉ / TERMINÉ</option>
+                <option value="archived">ARCHIVÉ</option>
               </select>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <div className="form-group mb-0">
+              <label className="form-label">
                 Priorité
               </label>
               <select
                 value={priority}
                 onChange={e => setPriority(e.target.value as ProjectPriority)}
-                className="apple-input w-full text-xs font-medium"
+                className="form-select font-mono"
               >
-                <option value="urgent">🔴 Critique / Urgent</option>
-                <option value="high">🟠 Haute</option>
-                <option value="medium">🟡 Moyenne</option>
-                <option value="low">🟢 Faible</option>
+                <option value="urgent">CRITIQUE / URGENT</option>
+                <option value="high">HAUTE</option>
+                <option value="medium">MOYENNE</option>
+                <option value="low">FAIBLE</option>
               </select>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <div className="form-group mb-0">
+              <label className="form-label">
                 Admin Responsable
               </label>
               <select
                 value={leadUserId}
                 onChange={e => setLeadUserId(e.target.value)}
-                className="apple-input w-full text-xs font-medium"
+                className="form-select"
               >
                 {users.map(u => (
                   <option key={u.id} value={u.id}>
@@ -193,39 +188,39 @@ export function EditProjectModal({ isOpen, onClose, project }: EditProjectModalP
 
           {/* Calendrier : Dates Début et Fin */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-[#0071E3]" />
+            <div className="form-group mb-0">
+              <label className="form-label flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-[var(--red)]" />
                 Date de Lancement
               </label>
               <input
                 type="date"
                 value={startDate}
                 onChange={e => setStartDate(e.target.value)}
-                className="apple-input w-full text-xs"
+                className="form-input font-mono"
               />
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-[#FF3B30]" />
+            <div className="form-group mb-0">
+              <label className="form-label flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-[var(--red)]" />
                 Échéance Prévue
               </label>
               <input
                 type="date"
                 value={dueDate}
                 onChange={e => setDueDate(e.target.value)}
-                className="apple-input w-full text-xs"
+                className="form-input font-mono"
               />
             </div>
           </div>
 
           {/* Temps alloué & Budget du projet */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-black/5 dark:border-white/10">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-[#0071E3]" />
-                Temps Alloué Dédié au Projet (Heures)
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-[var(--line)]">
+            <div className="form-group mb-0">
+              <label className="form-label flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-[var(--red)]" />
+                Temps Alloué (Heures)
               </label>
               <input
                 type="number"
@@ -233,18 +228,18 @@ export function EditProjectModal({ isOpen, onClose, project }: EditProjectModalP
                 step="5"
                 value={allocatedHours}
                 onChange={e => setAllocatedHours(Number(e.target.value))}
-                className="apple-input w-full text-xs"
-                placeholder="Ex : 160h"
+                className="form-input font-mono"
+                placeholder="Ex : 160"
               />
-              <p className="text-[11px] text-slate-400">
-                Plafond d'heures pour le suivi du temps et alertes de dépassement.
+              <p className="form-hint">
+                Plafond d'heures pour suivi et alertes.
               </p>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[13px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <DollarSign className="w-3.5 h-3.5 text-[#34C759]" />
-                Budget Financier Alloué (FCFA)
+            <div className="form-group mb-0">
+              <label className="form-label flex items-center gap-1.5">
+                <DollarSign className="w-3.5 h-3.5 text-[var(--red)]" />
+                Budget Alloué (FCFA)
               </label>
               <input
                 type="number"
@@ -252,48 +247,48 @@ export function EditProjectModal({ isOpen, onClose, project }: EditProjectModalP
                 step="1000"
                 value={budget}
                 onChange={e => setBudget(Number(e.target.value))}
-                className="apple-input w-full text-xs"
-                placeholder="Ex : 45000"
+                className="form-input font-mono"
+                placeholder="Ex : 45000000"
               />
-              <p className="text-[11px] text-slate-400">
-                Enveloppe budgétaire globale allouée à ce projet.
+              <p className="form-hint">
+                Enveloppe budgétaire globale du projet.
               </p>
             </div>
           </div>
 
           {/* Formule actuelle du projet */}
-          <div className="p-3.5 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E]/60 border border-black/5 dark:border-white/5 flex items-center justify-between">
+          <div className="card-inner flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <Shield className="w-4 h-4 text-[#0071E3] dark:text-[#2997FF]" />
+              <Shield className="w-4 h-4 text-[var(--red)]" />
               <div>
-                <div className="text-xs font-semibold text-slate-900 dark:text-white">
-                  Niveau de formule : <span className="uppercase text-[#0071E3] dark:text-[#2997FF]">{project.tier || 'Standard'}</span>
+                <div className="text-xs font-bold text-white uppercase">
+                  Niveau de formule : <span className="text-[var(--red)] font-mono">{(project.tier || 'Standard').toUpperCase()}</span>
                 </div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Le niveau (Standard, Pro, Premium) est administré par le Super Administrateur.
+                <div className="text-[11px] text-[var(--white-45)]">
+                  Le niveau (Standard, Pro, Premium) est gouverné par le Super Administrateur.
                 </div>
               </div>
             </div>
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#0071E3]/10 text-[#0071E3] dark:text-[#2997FF]">
+            <span className="badge badge-role font-mono">
               {(project.tier || 'Standard').toUpperCase()}
             </span>
           </div>
 
           {/* Boutons d'action */}
-          <div className="pt-4 flex items-center justify-end gap-3">
+          <div className="modal-actions">
             <button
               type="button"
               onClick={onClose}
-              className="apple-btn-secondary text-xs"
+              className="btn btn-secondary"
             >
-              Annuler
+              ANNULER
             </button>
             <button
               type="submit"
-              className="apple-btn-primary text-xs"
+              className="btn btn-primary"
             >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Enregistrer les modifications</span>
+              <CheckCircle2 className="w-4 h-4" />
+              <span>ENREGISTRER</span>
             </button>
           </div>
         </form>

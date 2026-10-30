@@ -139,3 +139,26 @@ export async function calculateSha256(data: string): Promise<string> {
   const hashArray = Array.from(new Uint8Array(buffer));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
+
+/**
+ * Hache un mot de passe avec un sel cryptographique aléatoire de 16 octets.
+ */
+export async function hashPassword(password: string, customSalt?: string): Promise<{ hash: string; salt: string }> {
+  const salt = customSalt || bufferToBase64(crypto.getRandomValues(new Uint8Array(16)));
+  const hash = await calculateSha256(`${salt}:${password}`);
+  return { hash, salt };
+}
+
+/**
+ * Vérifie un mot de passe en temps constant par rapport à son empreinte et son sel.
+ */
+export async function verifyPassword(password: string, hash: string, salt: string): Promise<boolean> {
+  const computed = await calculateSha256(`${salt}:${password}`);
+  if (computed.length !== hash.length) return false;
+  let result = 0;
+  for (let i = 0; i < computed.length; i++) {
+    result |= computed.charCodeAt(i) ^ hash.charCodeAt(i);
+  }
+  return result === 0;
+}
+

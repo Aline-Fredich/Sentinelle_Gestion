@@ -234,39 +234,294 @@ VALUES ('sentinel-avatars', 'sentinel-avatars', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- 5. POLITIQUES RLS (ROW LEVEL SECURITY)
+-- Activation stricte sur l'ensemble des tables métier
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.workspace_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.project_phases ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.checklist_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.task_dependencies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.time_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.project_expenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.project_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
--- Politiques de base pour utilisateurs authentifiés
-CREATE POLICY "Users can view profiles in same workspace" ON public.profiles
-    FOR SELECT TO authenticated USING (true);
+-- 5.1 Fonctions d'aide SECURITY DEFINER pour le cloisonnement d'espace sans récursion
+CREATE OR REPLACE FUNCTION public.is_workspace_member(ws_id UUID, u_id UUID DEFAULT auth.uid())
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM public.workspace_members
+        WHERE workspace_id = ws_id AND user_id = u_id
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
-CREATE POLICY "Users can update their own profile" ON public.profiles
-    FOR UPDATE TO authenticated USING (auth.uid() = id);
+CREATE OR REPLACE FUNCTION public.is_workspace_admin_or_owner(ws_id UUID, u_id UUID DEFAULT auth.uid())
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM public.workspace_members
+        WHERE workspace_id = ws_id AND user_id = u_id
+        AND role IN ('owner', 'admin', 'super_admin')
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
-CREATE POLICY "Workspace members can access projects" ON public.projects
-    FOR ALL TO authenticated USING (
-        EXISTS (
-            SELECT 1 FROM public.workspace_members
-            WHERE workspace_members.workspace_id = projects.workspace_id
-            AND workspace_members.user_id = auth.uid()
+-- 5.2 Profils utilisateurs (Visibilité limitée au profil personnel et aux collègues du même espace)
+CREATE POLICY "profiles_select_self_or_comember" ON public.profiles
+    FOR SELECT TO authenticated USING (
+        auth.uid() = id
+        OR EXISTS (
+            SELECT 1 FROM public.workspace_members wm1
+            JOIN public.workspace_members wm2 ON wm1.workspace_id = wm2.workspace_id
+            WHERE wm1.user_id = auth.uid() AND wm2.user_id = public.profiles.id
         )
     );
 
-CREATE POLICY "Workspace members can access tasks" ON public.tasks
-    FOR ALL TO authenticated USING (
+CREATE POLICY "profiles_insert_self" ON public.profiles
+    FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "profiles_update_self" ON public.profiles
+    FOR UPDATE TO authenticated USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+
+-- 5.3 Espaces de travail (Workspaces)
+CREATE POLICY "workspaces_select_members" ON public.workspaces
+    FOR SELECT TO authenticated USING (public.is_workspace_member(id));
+
+CREATE POLICY "workspaces_insert_creator" ON public.workspaces
+    FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL);
+
+CREATE POLICY "workspaces_update_admin" ON public.workspaces
+    FOR UPDATE TO authenticated USING (public.is_workspace_admin_or_owner(id))
+    WITH CHECK (public.is_workspace_admin_or_owner(id));
+
+CREATE POLICY "workspaces_delete_owner" ON public.workspaces
+    FOR DELETE TO authenticated USING (public.is_workspace_admin_or_owner(id));
+
+-- 5.4 Membres d'espaces (Workspace Members)
+CREATE POLICY "workspace_members_select" ON public.workspace_members
+    FOR SELECT TO authenticated USING (public.is_workspace_member(workspace_id));
+
+CREATE POLICY "workspace_members_insert" ON public.workspace_members
+    FOR INSERT TO authenticated WITH CHECK (
+        public.is_workspace_admin_or_owner(workspace_id)
+        OR (user_id = auth.uid() AND NOT EXISTS (SELECT 1 FROM public.workspace_members WHERE workspace_id = workspace_members.workspace_id))
+    );
+
+CREATE POLICY "workspace_members_update" ON public.workspace_members
+    FOR UPDATE TO authenticated USING (public.is_workspace_admin_or_owner(workspace_id))
+    WITH CHECK (public.is_workspace_admin_or_owner(workspace_id));
+
+CREATE POLICY "workspace_members_delete" ON public.workspace_members
+    FOR DELETE TO authenticated USING (public.is_workspace_admin_or_owner(workspace_id) OR user_id = auth.uid());
+
+-- 5.5 Projets
+CREATE POLICY "projects_select" ON public.projects
+    FOR SELECT TO authenticated USING (public.is_workspace_member(workspace_id));
+
+CREATE POLICY "projects_insert" ON public.projects
+    FOR INSERT TO authenticated WITH CHECK (public.is_workspace_member(workspace_id));
+
+CREATE POLICY "projects_update" ON public.projects
+    FOR UPDATE TO authenticated USING (public.is_workspace_member(workspace_id))
+    WITH CHECK (public.is_workspace_member(workspace_id));
+
+CREATE POLICY "projects_delete" ON public.projects
+    FOR DELETE TO authenticated USING (public.is_workspace_admin_or_owner(workspace_id));
+
+-- 5.6 Phases de projets
+CREATE POLICY "phases_select" ON public.project_phases
+    FOR SELECT TO authenticated USING (
+        EXISTS (SELECT 1 FROM public.projects p WHERE p.id = project_id AND public.is_workspace_member(p.workspace_id))
+    );
+
+CREATE POLICY "phases_insert" ON public.project_phases
+    FOR INSERT TO authenticated WITH CHECK (
+        EXISTS (SELECT 1 FROM public.projects p WHERE p.id = project_id AND public.is_workspace_member(p.workspace_id))
+    );
+
+CREATE POLICY "phases_update" ON public.project_phases
+    FOR UPDATE TO authenticated USING (
+        EXISTS (SELECT 1 FROM public.projects p WHERE p.id = project_id AND public.is_workspace_member(p.workspace_id))
+    );
+
+CREATE POLICY "phases_delete" ON public.project_phases
+    FOR DELETE TO authenticated USING (
+        EXISTS (SELECT 1 FROM public.projects p WHERE p.id = project_id AND public.is_workspace_member(p.workspace_id))
+    );
+
+-- 5.7 Tâches
+CREATE POLICY "tasks_select" ON public.tasks
+    FOR SELECT TO authenticated USING (public.is_workspace_member(workspace_id));
+
+CREATE POLICY "tasks_insert" ON public.tasks
+    FOR INSERT TO authenticated WITH CHECK (public.is_workspace_member(workspace_id));
+
+CREATE POLICY "tasks_update" ON public.tasks
+    FOR UPDATE TO authenticated USING (public.is_workspace_member(workspace_id))
+    WITH CHECK (public.is_workspace_member(workspace_id));
+
+CREATE POLICY "tasks_delete" ON public.tasks
+    FOR DELETE TO authenticated USING (public.is_workspace_member(workspace_id));
+
+-- 5.8 Éléments de checklist
+CREATE POLICY "checklist_select" ON public.checklist_items
+    FOR SELECT TO authenticated USING (
+        EXISTS (SELECT 1 FROM public.tasks t WHERE t.id = task_id AND public.is_workspace_member(t.workspace_id))
+    );
+
+CREATE POLICY "checklist_insert" ON public.checklist_items
+    FOR INSERT TO authenticated WITH CHECK (
+        EXISTS (SELECT 1 FROM public.tasks t WHERE t.id = task_id AND public.is_workspace_member(t.workspace_id))
+    );
+
+CREATE POLICY "checklist_update" ON public.checklist_items
+    FOR UPDATE TO authenticated USING (
+        EXISTS (SELECT 1 FROM public.tasks t WHERE t.id = task_id AND public.is_workspace_member(t.workspace_id))
+    );
+
+CREATE POLICY "checklist_delete" ON public.checklist_items
+    FOR DELETE TO authenticated USING (
+        EXISTS (SELECT 1 FROM public.tasks t WHERE t.id = task_id AND public.is_workspace_member(t.workspace_id))
+    );
+
+-- 5.9 Dépendances de tâches
+CREATE POLICY "dependencies_select" ON public.task_dependencies
+    FOR SELECT TO authenticated USING (
+        EXISTS (SELECT 1 FROM public.projects p WHERE p.id = project_id AND public.is_workspace_member(p.workspace_id))
+    );
+
+CREATE POLICY "dependencies_insert" ON public.task_dependencies
+    FOR INSERT TO authenticated WITH CHECK (
+        EXISTS (SELECT 1 FROM public.projects p WHERE p.id = project_id AND public.is_workspace_member(p.workspace_id))
+    );
+
+CREATE POLICY "dependencies_delete" ON public.task_dependencies
+    FOR DELETE TO authenticated USING (
+        EXISTS (SELECT 1 FROM public.projects p WHERE p.id = project_id AND public.is_workspace_member(p.workspace_id))
+    );
+
+-- 5.10 Saisies de temps (Time Entries)
+CREATE POLICY "time_entries_select" ON public.time_entries
+    FOR SELECT TO authenticated USING (public.is_workspace_member(workspace_id));
+
+CREATE POLICY "time_entries_insert" ON public.time_entries
+    FOR INSERT TO authenticated WITH CHECK (
+        public.is_workspace_member(workspace_id) AND user_id = auth.uid()
+    );
+
+CREATE POLICY "time_entries_update" ON public.time_entries
+    FOR UPDATE TO authenticated USING (
+        public.is_workspace_member(workspace_id) AND (user_id = auth.uid() OR public.is_workspace_admin_or_owner(workspace_id))
+    ) WITH CHECK (public.is_workspace_member(workspace_id));
+
+CREATE POLICY "time_entries_delete" ON public.time_entries
+    FOR DELETE TO authenticated USING (
+        public.is_workspace_member(workspace_id) AND (user_id = auth.uid() OR public.is_workspace_admin_or_owner(workspace_id))
+    );
+
+-- 5.11 Dépenses & Budgets
+CREATE POLICY "expenses_select" ON public.project_expenses
+    FOR SELECT TO authenticated USING (
+        EXISTS (SELECT 1 FROM public.projects p WHERE p.id = project_id AND public.is_workspace_member(p.workspace_id))
+    );
+
+CREATE POLICY "expenses_insert" ON public.project_expenses
+    FOR INSERT TO authenticated WITH CHECK (
+        EXISTS (SELECT 1 FROM public.projects p WHERE p.id = project_id AND public.is_workspace_member(p.workspace_id))
+    );
+
+CREATE POLICY "expenses_update" ON public.project_expenses
+    FOR UPDATE TO authenticated USING (
+        EXISTS (SELECT 1 FROM public.projects p WHERE p.id = project_id AND public.is_workspace_admin_or_owner(p.workspace_id))
+    );
+
+CREATE POLICY "expenses_delete" ON public.project_expenses
+    FOR DELETE TO authenticated USING (
+        EXISTS (SELECT 1 FROM public.projects p WHERE p.id = project_id AND public.is_workspace_admin_or_owner(p.workspace_id))
+    );
+
+-- 5.12 Documents de projet
+CREATE POLICY "documents_select" ON public.project_documents
+    FOR SELECT TO authenticated USING (
+        EXISTS (SELECT 1 FROM public.projects p WHERE p.id = project_id AND public.is_workspace_member(p.workspace_id))
+    );
+
+CREATE POLICY "documents_insert" ON public.project_documents
+    FOR INSERT TO authenticated WITH CHECK (
+        EXISTS (SELECT 1 FROM public.projects p WHERE p.id = project_id AND public.is_workspace_member(p.workspace_id))
+    );
+
+CREATE POLICY "documents_update" ON public.project_documents
+    FOR UPDATE TO authenticated USING (
+        EXISTS (SELECT 1 FROM public.projects p WHERE p.id = project_id AND public.is_workspace_member(p.workspace_id))
+    );
+
+CREATE POLICY "documents_delete" ON public.project_documents
+    FOR DELETE TO authenticated USING (
+        EXISTS (SELECT 1 FROM public.projects p WHERE p.id = project_id AND public.is_workspace_member(p.workspace_id))
+    );
+
+-- 5.13 Journal d'Audit (Append-only strict : Aucune modification ni suppression)
+CREATE POLICY "audit_logs_select" ON public.audit_logs
+    FOR SELECT TO authenticated USING (
+        workspace_id IS NULL OR public.is_workspace_member(workspace_id)
+    );
+
+CREATE POLICY "audit_logs_insert" ON public.audit_logs
+    FOR INSERT TO authenticated WITH CHECK (
+        workspace_id IS NULL OR public.is_workspace_member(workspace_id)
+    );
+
+-- Verrouillage cryptographique au niveau SQL : interdiction absolue de modification et suppression
+CREATE OR REPLACE FUNCTION public.prevent_audit_log_tampering()
+RETURNS TRIGGER AS $$
+BEGIN
+    RAISE EXCEPTION 'Interdiction formelle : Les entrées du journal d audit (audit_logs) sont infalsifiables et ne peuvent être ni modifiées ni supprimées (Append-Only immutability).';
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_audit_logs_no_update ON public.audit_logs;
+CREATE TRIGGER trg_audit_logs_no_update
+    BEFORE UPDATE ON public.audit_logs
+    FOR EACH ROW EXECUTE FUNCTION public.prevent_audit_log_tampering();
+
+DROP TRIGGER IF EXISTS trg_audit_logs_no_delete ON public.audit_logs;
+CREATE TRIGGER trg_audit_logs_no_delete
+    BEFORE DELETE ON public.audit_logs
+    FOR EACH ROW EXECUTE FUNCTION public.prevent_audit_log_tampering();
+
+-- 5.14 Table des événements de paiement et registre d'idempotence MTN MoMo
+CREATE TABLE IF NOT EXISTS public.payment_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    reference TEXT UNIQUE NOT NULL,
+    transaction_id TEXT,
+    phone TEXT NOT NULL,
+    amount NUMERIC(12, 2) NOT NULL,
+    currency TEXT DEFAULT 'XAF',
+    status TEXT NOT NULL,
+    provider TEXT DEFAULT 'MTN_MOMO',
+    payload JSONB DEFAULT '{}'::JSONB,
+    processed_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.payment_events ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "payment_events_select_admin" ON public.payment_events
+    FOR SELECT TO authenticated USING (
         EXISTS (
             SELECT 1 FROM public.workspace_members
-            WHERE workspace_members.workspace_id = tasks.workspace_id
-            AND workspace_members.user_id = auth.uid()
+            WHERE user_id = auth.uid() AND role IN ('owner', 'admin', 'super_admin')
         )
     );
+
+CREATE POLICY "payment_events_insert_webhook" ON public.payment_events
+    FOR INSERT TO authenticated, anon WITH CHECK (true);
+
 
 -- Trigger pour créer automatiquement un profil lors de l'inscription via Supabase Auth
 CREATE OR REPLACE FUNCTION public.handle_new_user()

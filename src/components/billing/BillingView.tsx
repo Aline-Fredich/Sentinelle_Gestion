@@ -32,124 +32,109 @@ export function BillingView() {
   };
 
   return (
-    <div className="space-y-7 max-w-5xl mx-auto pb-12">
-      {/* En-tête */}
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-[#E4E7EC] dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="space-y-6 max-w-6xl mx-auto pb-12">
+      {/* En-tête / Bloc Hero */}
+      <div className="panel panel--hero flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-[#0071E3] dark:text-[#2997FF] mb-1 uppercase tracking-wider">
-            <CreditCard className="w-3.5 h-3.5" />
-            Monétisation & Forfaits CEMAC (Congo)
+          <div className="flex items-center gap-2 text-xs font-bold text-red uppercase tracking-wider mb-1">
+            <CreditCard className="w-4 h-4 text-red" />
+            <span>MONÉTISATION & FORFAITS CEMAC (CONGO)</span>
           </div>
-          <h1 className="text-xl font-bold text-[#202733] dark:text-white">
-            Abonnement & Consommation des ressources
+          <h1 className="text-lg font-bold text-white tracking-wide">
+            ABONNEMENT & CONSOMMATION DES RESSOURCES
           </h1>
-          <p className="text-xs text-[#667085] dark:text-slate-400 mt-1">
+          <p className="text-xs text-white/70 mt-1">
             Gérez vos forfaits en toute transparence. Règlement direct par MTN Mobile Money en Francs CFA (XAF).
           </p>
         </div>
 
-        <div className="flex items-center gap-2 bg-[#F6F7F9] dark:bg-slate-800 p-1 rounded-xl border border-[#E4E7EC] dark:border-slate-700 text-xs font-semibold">
+        <div className="tabs">
           <button
             onClick={() => setSelectedBillingCycle('monthly')}
-            className={`px-3 py-1.5 rounded-lg transition ${
-              selectedBillingCycle === 'monthly'
-                ? 'bg-white dark:bg-slate-900 text-[#202733] dark:text-white shadow-sm'
-                : 'text-[#667085]'
-            }`}
+            aria-selected={selectedBillingCycle === 'monthly'}
+            className="tab"
           >
-            Mensuel
+            MENSUEL
           </button>
           <button
             onClick={() => setSelectedBillingCycle('yearly')}
-            className={`px-3 py-1.5 rounded-lg transition ${
-              selectedBillingCycle === 'yearly'
-                ? 'bg-white dark:bg-slate-900 text-[#202733] dark:text-white shadow-sm'
-                : 'text-[#667085]'
-            }`}
+            aria-selected={selectedBillingCycle === 'yearly'}
+            className="tab"
           >
-            Annuel (-20%)
+            ANNUEL (-20%)
           </button>
         </div>
       </div>
 
       {/* État actuel de consommation des quotas */}
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-[#E4E7EC] dark:border-slate-800 shadow-sm space-y-4">
-        <div className="flex items-center justify-between border-b border-[#E4E7EC] dark:border-slate-800 pb-3">
+      <div className="panel space-y-4">
+        <div className="flex items-center justify-between border-b border-[#242424] pb-3">
           <div>
-            <h2 className="text-sm font-bold text-[#202733] dark:text-white">
-              Votre offre active : <span className="text-[#0071E3] dark:text-[#2997FF] font-black">{currentPlan.name}</span>
+            <h2 className="panel-title mb-0">
+              VOTRE OFFRE ACTIVE : <span className="text-red font-bold">{currentPlan.name}</span>
             </h2>
-            <p className="text-xs text-[#667085]">
+            <p className="text-xs text-white/45 mt-1">
               Renouvellement automatique le 12 novembre 2026 • Statut : Actif
             </p>
           </div>
-          <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-[#23845B] dark:bg-emerald-950/40">
-            Abonnement valide
+          <span className="badge badge--ok">
+            ABONNEMENT VALIDE
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
           {/* Quota Projets */}
-          <div className="p-4 rounded-xl bg-[#F6F7F9] dark:bg-slate-800/50 border border-[#E4E7EC] dark:border-slate-800 space-y-2 text-xs">
+          <div className="card-inner space-y-2">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-[#667085] flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-blue-500" />
+              <span className="text-xs font-bold uppercase tracking-wider text-white/70 flex items-center gap-2">
+                <Layers className="w-4 h-4 text-red" />
                 Projets actifs
               </span>
-              <span className="font-bold text-[#202733] dark:text-white">
+              <span className="text-sm font-mono font-bold text-white">
                 {quotas.activeProjects.used} / {quotas.activeProjects.max}
               </span>
             </div>
-            <div className="w-full bg-[#EEF1F4] dark:bg-slate-700 h-2 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[#3478C8] rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(100, Math.round((quotas.activeProjects.used / quotas.activeProjects.max) * 100))}%` }}
-              />
+            <div className="progress">
+              <span style={{ width: `${Math.min(100, Math.round((quotas.activeProjects.used / quotas.activeProjects.max) * 100))}%` }} />
             </div>
           </div>
 
           {/* Quota Membres */}
-          <div className="p-4 rounded-xl bg-[#F6F7F9] dark:bg-slate-800/50 border border-[#E4E7EC] dark:border-slate-800 space-y-2 text-xs">
+          <div className="card-inner space-y-2">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-[#667085] flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-emerald-500" />
+              <span className="text-xs font-bold uppercase tracking-wider text-white/70 flex items-center gap-2">
+                <Users className="w-4 h-4 text-red" />
                 Membres d’équipe
               </span>
-              <span className="font-bold text-[#202733] dark:text-white">
+              <span className="text-sm font-mono font-bold text-white">
                 {quotas.members.used} / {quotas.members.max}
               </span>
             </div>
-            <div className="w-full bg-[#EEF1F4] dark:bg-slate-700 h-2 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[#23845B] rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(100, Math.round((quotas.members.used / quotas.members.max) * 100))}%` }}
-              />
+            <div className="progress">
+              <span style={{ width: `${Math.min(100, Math.round((quotas.members.used / quotas.members.max) * 100))}%` }} />
             </div>
           </div>
 
           {/* Quota Stockage */}
-          <div className="p-4 rounded-xl bg-[#F6F7F9] dark:bg-slate-800/50 border border-[#E4E7EC] dark:border-slate-800 space-y-2 text-xs">
+          <div className="card-inner space-y-2">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-[#667085] flex items-center gap-1.5">
-                <HardDrive className="w-4 h-4 text-amber-500" />
+              <span className="text-xs font-bold uppercase tracking-wider text-white/70 flex items-center gap-2">
+                <HardDrive className="w-4 h-4 text-red" />
                 Stockage documents
               </span>
-              <span className="font-bold text-[#202733] dark:text-white">
+              <span className="text-sm font-mono font-bold text-white">
                 {quotas.storage.usedMb} Mo / {quotas.storage.maxMb >= 1000 ? `${Math.round(quotas.storage.maxMb / 1024)} Go` : `${quotas.storage.maxMb} Mo`}
               </span>
             </div>
-            <div className="w-full bg-[#EEF1F4] dark:bg-slate-700 h-2 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[#D69A24] rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(100, Math.round((quotas.storage.usedMb / quotas.storage.maxMb) * 100))}%` }}
-              />
+            <div className="progress">
+              <span style={{ width: `${Math.min(100, Math.round((quotas.storage.usedMb / quotas.storage.maxMb) * 100))}%` }} />
             </div>
           </div>
         </div>
       </div>
 
       {/* Grille des offres en FCFA */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {plans.map(plan => {
           const isCurrent = subscription.planCode === plan.code;
           const displayPrice = selectedBillingCycle === 'yearly' && plan.priceMonth > 0 
@@ -159,41 +144,41 @@ export function BillingView() {
           return (
             <div
               key={plan.id}
-              className={`p-6 rounded-3xl bg-white dark:bg-slate-900 border flex flex-col justify-between transition relative shadow-sm ${
+              className={`panel flex flex-col justify-between relative transition ${
                 plan.isPopular
-                  ? 'border-[#0071E3] dark:border-[#2997FF] shadow-lg ring-1 ring-[#0071E3]'
-                  : 'border-[#E4E7EC] dark:border-slate-800'
+                  ? 'border-red shadow-[0_0_22px_rgba(255,0,0,0.35)]'
+                  : 'border-[#242424]'
               }`}
             >
               {plan.isPopular && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-bold bg-[#0071E3] text-white shadow-sm uppercase tracking-wider">
-                  Recommandé
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-[4px] text-[10px] font-bold bg-red text-white uppercase tracking-wider border border-red">
+                  RECOMMANDÉ
                 </span>
               )}
 
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-base font-bold text-[#202733] dark:text-white">
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wide">
                     {plan.name}
                   </h3>
-                  <p className="text-xs text-[#667085] mt-1">
+                  <p className="text-xs text-white/45 mt-1">
                     {plan.tagline}
                   </p>
                 </div>
 
                 <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-black text-[#202733] dark:text-white">
+                  <span className="text-2xl font-mono font-bold text-white">
                     {formatCurrency(displayPrice, 'XAF')}
                   </span>
-                  <span className="text-xs text-[#667085]">
+                  <span className="text-xs text-white/45">
                     / mois {selectedBillingCycle === 'yearly' && plan.priceMonth > 0 ? '(facturé annuellement)' : ''}
                   </span>
                 </div>
 
-                <div className="space-y-2 pt-2 border-t border-[#E4E7EC] dark:border-slate-800 text-xs">
+                <div className="space-y-2 pt-3 border-t border-[#242424] text-xs">
                   {plan.features.map((feat, idx) => (
-                    <div key={idx} className="flex items-start gap-2 text-[#202733] dark:text-slate-300">
-                      <Check className="w-4 h-4 text-[#23845B] flex-shrink-0 mt-0.5" />
+                    <div key={idx} className="flex items-start gap-2 text-white/70">
+                      <Check className="w-4 h-4 text-red flex-shrink-0 mt-0.5" />
                       <span>{feat}</span>
                     </div>
                   ))}
@@ -204,23 +189,19 @@ export function BillingView() {
                 {isCurrent ? (
                   <button
                     disabled
-                    className="w-full py-2.5 text-xs font-semibold rounded-xl bg-[#F6F7F9] dark:bg-slate-800 text-[#667085] border border-[#E4E7EC] dark:border-slate-700 cursor-default"
+                    className="btn btn-secondary btn-block opacity-45 cursor-not-allowed"
                   >
-                    Offre actuellement active
+                    OFFRE ACTUELLEMENT ACTIVE
                   </button>
                 ) : (
                   <button
                     onClick={() => handleSelectPlan(plan)}
-                    className={`w-full py-2.5 text-xs font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-1.5 ${
-                      plan.isPopular
-                        ? 'bg-[#0071E3] hover:bg-[#005bb5] text-white'
-                        : 'bg-[#202733] hover:bg-slate-800 text-white dark:bg-slate-800 dark:hover:bg-slate-700'
-                    }`}
+                    className={plan.isPopular ? 'btn btn-primary btn-block' : 'btn btn-secondary btn-block'}
                   >
-                    <span>Choisir {plan.name}</span>
+                    <span>CHOISIR {plan.name}</span>
                     {plan.priceMonth > 0 && (
-                      <span className="px-1.5 py-0.5 rounded text-[9px] bg-[#FFCC00] text-black font-extrabold uppercase ml-1">
-                        MoMo
+                      <span className="badge badge--ok text-[9px] py-0 px-1 ml-1">
+                        MOMO
                       </span>
                     )}
                   </button>
@@ -232,60 +213,76 @@ export function BillingView() {
       </div>
 
       {/* Historique des Factures & Reçus Mobile Money */}
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-[#E4E7EC] dark:border-slate-800 shadow-sm space-y-4">
-        <div className="flex items-center justify-between border-b border-[#E4E7EC] dark:border-slate-800 pb-3">
+      <div className="panel space-y-4">
+        <div className="flex items-center justify-between border-b border-[#242424] pb-3">
           <div className="flex items-center gap-2">
-            <Receipt className="w-4 h-4 text-[#0071E3] dark:text-[#2997FF]" />
-            <h3 className="text-sm font-bold text-[#202733] dark:text-white">
-              Historique des Factures & Règlements MTN Congo
+            <Receipt className="w-4 h-4 text-red" />
+            <h3 className="panel-title mb-0">
+              HISTORIQUE DES FACTURES & RÈGLEMENTS MTN CONGO
             </h3>
           </div>
-          <span className="text-xs text-[#667085]">
-            Devise officielle : XAF (FCFA CEMAC)
+          <span className="tag-mono text-white/45">
+            DEVISE : XAF (FCFA CEMAC)
           </span>
         </div>
 
         {transactions.length === 0 ? (
-          <div className="py-6 text-center space-y-1 text-xs text-[#667085]">
-            <p>Aucune transaction Mobile Money enregistrée pour le moment.</p>
-            <p className="text-[11px] text-slate-400">
+          <div className="empty py-8">
+            <Receipt className="w-8 h-8 text-red" />
+            <div className="text-sm font-bold text-white uppercase tracking-wider">
+              AUCUNE TRANSACTION MOBILE MONEY
+            </div>
+            <p className="text-xs text-white/45">
               Vos prochains reçus MTN Congo apparaîtront automatiquement ici avec option d'impression.
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-[#E4E7EC] dark:divide-slate-800 text-xs">
-            {transactions.map(tx => (
-              <div key={tx.id} className="py-3 flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <div className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <span>{tx.planName}</span>
-                    <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-[#FFCC00] text-black">
-                      MTN
-                    </span>
-                    <span className="text-slate-400 font-mono text-[11px]">{tx.reference}</span>
-                  </div>
-                  <div className="text-[11px] text-[#667085]">
-                    {new Date(tx.createdAt).toLocaleDateString('fr-CG')} à {new Date(tx.createdAt).toLocaleTimeString('fr-CG')} • {tx.phoneNumber}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <span className="font-black text-slate-900 dark:text-white">
-                    {formatCurrency(tx.amount, 'XAF')}
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-[#23845B] dark:bg-emerald-950/40">
-                    Payé
-                  </span>
-                  <button
-                    onClick={() => window.print()}
-                    className="p-1.5 rounded-lg border border-black/5 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/10 text-slate-500"
-                    title="Imprimer le reçu"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>FORFAIT</th>
+                  <th>OPÉRATEUR</th>
+                  <th>RÉFÉRENCE</th>
+                  <th>DATE & HEURE</th>
+                  <th>NUMÉRO</th>
+                  <th>MONTANT</th>
+                  <th>STATUT</th>
+                  <th>ACTION</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.map(tx => (
+                  <tr key={tx.id}>
+                    <td className="font-bold text-white">{tx.planName}</td>
+                    <td>
+                      <span className="badge badge--ok">MTN MOMO</span>
+                    </td>
+                    <td className="font-mono text-white/70">{tx.reference}</td>
+                    <td className="font-mono text-white/70">
+                      {new Date(tx.createdAt).toLocaleDateString('fr-CG')} à {new Date(tx.createdAt).toLocaleTimeString('fr-CG')}
+                    </td>
+                    <td className="font-mono text-white">{tx.phoneNumber}</td>
+                    <td className="font-mono font-bold text-white">
+                      {formatCurrency(tx.amount, 'XAF')}
+                    </td>
+                    <td>
+                      <span className="badge badge--ok">PAYÉ</span>
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => window.print()}
+                        className="btn btn-secondary btn-sm"
+                        title="Imprimer le reçu"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>REÇU</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
@@ -300,4 +297,3 @@ export function BillingView() {
     </div>
   );
 }
-

@@ -74,54 +74,60 @@ export function ImportModal({ isOpen, onClose }: ImportModalProps) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="import-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in"
+      className="modal-overlay"
+      onClick={onClose}
     >
-      <div className="bg-white dark:bg-[#0F172A] rounded-2xl p-6 max-w-xl w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+      <div 
+        className="modal max-w-xl w-full"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between pb-3 border-b border-[var(--line)] mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-[#0066FF]">
-              <Upload className="w-4 h-4" />
-            </div>
+            <Upload className="w-5 h-5 text-[var(--red)]" />
             <div>
-              <h3 id="import-modal-title" className="text-sm font-bold text-slate-900 dark:text-white">
-                Centre d’Importation Multi-Sources
+              <h3 id="import-modal-title" className="modal-title mb-0">
+                CENTRE D’IMPORTATION MULTI-SOURCES
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-[var(--white-70)]">
                 Importez vos données depuis Excel, Trello, Asana ou Notion
               </p>
             </div>
           </div>
-          <button onClick={onClose} aria-label="Fermer" className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-            <X className="w-5 h-5" />
+          <button 
+            onClick={onClose} 
+            aria-label="Fermer" 
+            className="btn btn-ghost btn-icon btn-sm"
+          >
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {importReport ? (
-          <div className="py-6 text-center space-y-3">
-            <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
-            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-              {importReport.imported} tâche(s) importée(s) avec succès !
+          <div className="py-6 text-center space-y-4">
+            <CheckCircle2 className="w-12 h-12 text-white mx-auto border-2 border-[var(--red)] rounded-full p-2 bg-[var(--red-tint)]" />
+            <h4 className="text-sm font-bold text-white uppercase tracking-wider">
+              {importReport.imported} TÂCHE(S) IMPORTÉE(S) AVEC SUCCÈS !
             </h4>
             {importReport.errors.length > 0 && (
-              <div className="text-left p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 text-xs space-y-1">
-                <span className="font-bold block">Avertissements ({importReport.errors.length}) :</span>
+              <div className="text-left p-3 rounded-[var(--r-xs)] bg-[var(--red-tint)] border border-[var(--red-soft)] text-xs space-y-1">
+                <span className="font-bold text-[var(--red)] block uppercase tracking-wider">Avertissements ({importReport.errors.length}) :</span>
                 {importReport.errors.map((err, i) => (
-                  <p key={i}>• {err}</p>
+                  <p key={i} className="text-[var(--white-70)]">• {err}</p>
                 ))}
               </div>
             )}
             <button
               onClick={onClose}
-              className="mt-4 px-6 py-2 bg-[#0066FF] hover:bg-blue-600 text-white text-xs font-semibold rounded-xl"
+              className="btn btn-primary"
             >
-              Fermer l’assistant
+              FERMER L’ASSISTANT
             </button>
           </div>
         ) : (
           <div className="space-y-4">
             {/* Sélecteur de source */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+            <div className="form-group mb-0">
+              <label className="form-label">
                 Format de la source d’origine
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -138,23 +144,23 @@ export function ImportModal({ isOpen, onClose }: ImportModalProps) {
                       key={src.id}
                       type="button"
                       onClick={() => handleSourceChange(src.id as ExternalSourceType)}
-                      className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center gap-1.5 ${
+                      className={`p-2.5 rounded-[var(--r-xs)] border text-center transition flex flex-col items-center gap-1.5 ${
                         isSelected 
-                          ? 'border-[#0066FF] bg-blue-50/70 dark:bg-blue-950/50 text-[#0066FF] font-bold ring-1 ring-[#0066FF]' 
-                          : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium'
+                          ? 'border-[var(--red)] bg-[var(--red-tint)] text-white shadow-[var(--glow-sm)]' 
+                          : 'border-[var(--line)] bg-black text-[var(--white-70)] hover:border-[var(--line-strong)]'
                       }`}
                     >
-                      <Icon className="w-4 h-4" />
-                      <span className="text-[11px]">{src.label}</span>
+                      <Icon className="w-4 h-4 text-[var(--red)]" />
+                      <span className="text-[11px] font-bold uppercase tracking-wider">{src.label}</span>
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 text-blue-900 dark:text-blue-200 text-xs flex items-start gap-2">
-              <Info className="w-4 h-4 text-[#0066FF] flex-shrink-0 mt-0.5" />
-              <span>
+            <div className="alert flex items-start gap-2">
+              <Info className="w-4 h-4 text-[var(--red)] flex-none mt-0.5" />
+              <span className="text-xs text-[var(--white-70)]">
                 {sourceType === 'excel_csv' && 'Format : Titre;Description;Statut;Priorite;Echeance;Heures (virgule ou point-virgule acceptés).'}
                 {sourceType === 'trello_json' && 'Collez le contenu du fichier exporté depuis Menu Trello > Plus > Imprimer et exporter > Exporter en JSON.'}
                 {sourceType === 'asana_csv' && 'Collez le contenu de l’export CSV Asana généré depuis les options du projet.'}
@@ -163,9 +169,9 @@ export function ImportModal({ isOpen, onClose }: ImportModalProps) {
             </div>
 
             {/* Saisie ou collage */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Contenu à importer
+            <div className="form-group mb-0">
+              <label className="form-label">
+                Contenu brut à importer
               </label>
               <textarea
                 rows={5}
@@ -174,28 +180,28 @@ export function ImportModal({ isOpen, onClose }: ImportModalProps) {
                   setRawText(e.target.value);
                   setPreviewTasks([]);
                 }}
-                className="w-full p-3 font-mono text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+                className="form-textarea font-mono text-xs"
               />
             </div>
 
             {/* Prévisualisation */}
             {previewTasks.length > 0 ? (
               <div className="space-y-2">
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
-                  Prévisualisation validée ({previewTasks.length} tâches prêtes à être créées)
+                <span className="text-xs font-bold uppercase tracking-wider text-white block">
+                  Prévisualisation validée ({previewTasks.length} tâches prêtes)
                 </span>
-                <div className="max-h-44 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-xl divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                <div className="max-h-44 overflow-y-auto border border-[var(--line)] rounded-[var(--r-xs)] divide-y divide-[var(--line)] text-xs">
                   {previewTasks.map((t, idx) => (
-                    <div key={idx} className="p-2.5 flex items-center justify-between">
+                    <div key={idx} className="p-2.5 flex items-center justify-between bg-black">
                       <div className="min-w-0 pr-2">
-                        <span className="font-semibold text-slate-900 dark:text-white block truncate">
+                        <span className="font-bold text-white block truncate">
                           {t.title}
                         </span>
-                        <span className="text-[11px] text-slate-400">
-                          Échéance : {t.dueDate || 'Non définie'} • Priorité : {t.priority}
+                        <span className="text-[11px] text-[var(--white-45)] font-mono">
+                          Échéance : {t.dueDate || 'Non définie'} • Priorité : {t.priority?.toUpperCase()}
                         </span>
                       </div>
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                      <span className="badge text-[10px] uppercase font-mono">
                         {t.status}
                       </span>
                     </div>
@@ -206,27 +212,27 @@ export function ImportModal({ isOpen, onClose }: ImportModalProps) {
               <button
                 type="button"
                 onClick={handleGeneratePreview}
-                className="w-full py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl transition"
+                className="btn btn-secondary w-full"
               >
-                Générer la prévisualisation des lignes
+                GÉNÉRER LA PRÉVISUALISATION
               </button>
             )}
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <div className="modal-actions">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
+                className="btn btn-secondary"
               >
-                Annuler
+                ANNULER
               </button>
               <button
                 type="button"
                 onClick={handleExecuteImport}
                 disabled={previewTasks.length === 0 && !rawText.trim()}
-                className="px-5 py-2 text-xs font-bold text-white bg-[#0066FF] hover:bg-blue-600 rounded-xl shadow-md transition disabled:opacity-50"
+                className="btn btn-primary"
               >
-                Confirmer l’importation
+                CONFIRMER L’IMPORTATION
               </button>
             </div>
           </div>

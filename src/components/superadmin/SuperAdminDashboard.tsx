@@ -2,17 +2,20 @@
 
 import React, { useState, useMemo } from 'react';
 import { 
-  ShieldCheck, Activity, Layers, Clock, Users, ArrowUpRight, 
-  Sparkles, CheckCircle2, AlertTriangle, Settings2, Sliders, 
-  Search, Filter, ExternalLink, ShieldAlert, Zap, MessageSquare,
-  TrendingUp, Award, Power
+  ShieldCheck, Layers, Clock, Users, 
+  CheckCircle2, Sliders, Search, ExternalLink, 
+  MessageSquare, TrendingUp, Award, Power, UserPlus
 } from 'lucide-react';
 import { useSentinel } from '@/lib/store';
-import { Project, ProjectTier, User } from '@/types/sentinel';
+import { Project, ProjectTier } from '@/types/sentinel';
 
-export function SuperAdminDashboard() {
+interface SuperAdminDashboardProps {
+  onOpenAdminConfig?: () => void;
+}
+
+export function SuperAdminDashboard({ onOpenAdminConfig }: SuperAdminDashboardProps = {}) {
   const { 
-    projects, users, timeEntries, tasks, risks,
+    projects, users, timeEntries, tasks,
     updateProjectTier, setActiveProjectId, setActiveView,
     addNotification, forumTopics
   } = useSentinel();
@@ -20,7 +23,6 @@ export function SuperAdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [tierFilter, setTierFilter] = useState<'all' | ProjectTier>('all');
   const [maintenanceMode, setMaintenanceMode] = useState(false);
-  const [allowRegistration, setAllowRegistration] = useState(true);
 
   // Calculs KPIs Globaux
   const totalProjects = projects.length;
@@ -88,187 +90,176 @@ export function SuperAdminDashboard() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
-      {/* 1. En-tête Superviseur Global Apple */}
-      <div className="p-7 rounded-3xl apple-glass shadow-[0_4px_24px_rgba(0,0,0,0.04)] flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+    <div className="stack animate-in fade-in duration-200">
+      {/* 1. En-tête Superviseur Global Hero */}
+      <div className="panel panel--hero flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <span className="px-3 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase bg-[#0071E3]/10 text-[#0071E3] dark:text-[#2997FF] border border-[#0071E3]/20 flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              Super Administrateur • Superviseur Global
+            <span className="badge-role">
+              <ShieldCheck className="w-3.5 h-3.5 text-[var(--red)] mr-1.5 inline" />
+              SUPER ADMINISTRATEUR • SUPERVISEUR GLOBAL
             </span>
-            <span className="w-2 h-2 rounded-full bg-[#34C759] animate-pulse" />
+            <span className="status-dot" />
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            Tableau de Bord de Pilotage & KPIs
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white uppercase">
+            TABLEAU DE BORD DE PILOTAGE & KPIS
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
+          <p className="text-xs sm:text-sm text-[var(--white-70)] mt-1 max-w-2xl leading-relaxed">
             Supervisez l’ensemble des projets, suivez la performance globale et gérez l’attribution des formules Standard, Pro et Premium pour chaque administrateur.
           </p>
         </div>
 
         {/* Contrôles système rapides */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={toggleMaintenance}
-            className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2 transition ${
-              maintenanceMode
-                ? 'bg-[#FF3B30] text-white shadow-md shadow-red-500/20'
-                : 'apple-btn-secondary text-xs'
-            }`}
+            className={`btn ${maintenanceMode ? 'btn-danger' : 'btn-secondary'}`}
           >
-            <Power className="w-3.5 h-3.5" />
-            <span>{maintenanceMode ? 'Maintenance Active' : 'Activer Maintenance'}</span>
+            <Power className="w-4 h-4" />
+            <span>{maintenanceMode ? 'MAINTENANCE ACTIVE' : 'ACTIVER MAINTENANCE'}</span>
           </button>
 
           <button
             onClick={() => setActiveView('settings')}
-            className="apple-btn-secondary text-xs"
+            className="btn btn-secondary"
           >
-            <Sliders className="w-3.5 h-3.5" />
-            <span>Options Système</span>
+            <Sliders className="w-4 h-4 text-[var(--red)]" />
+            <span>OPTIONS SYSTÈME</span>
           </button>
         </div>
       </div>
 
-      {/* 2. KPIs de Supervision Globale (Cartes Apple) */}
+      {/* 2. KPIs de Supervision Globale */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Projets Totaux & Répartition */}
-        <div className="p-6 rounded-3xl apple-card relative overflow-hidden">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
-            <span>Projets Sous Supervision</span>
-            <Layers className="w-4 h-4 text-[#0071E3] dark:text-[#2997FF]" />
+        {/* Projets Totaux */}
+        <div className="panel kpi">
+          <div className="kpi-head">
+            <span className="kpi-label">Projets Sous Supervision</span>
+            <div className="kpi-icon">
+              <Layers className="w-4 h-4" />
+            </div>
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-              {totalProjects}
-            </span>
-            <span className="text-xs font-semibold text-slate-400">projets</span>
+          <div className="kpi-value font-mono">
+            {totalProjects}
           </div>
-          <div className="mt-4 pt-3 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-[11px]">
-            <span className="text-slate-500">Standard : <strong className="text-slate-700 dark:text-slate-200">{standardProjectsCount}</strong></span>
-            <span className="text-[#0071E3] font-semibold">Pro : {proProjectsCount}</span>
-            <span className="text-[#34C759] font-semibold">Premium : {premiumProjectsCount}</span>
+          <div className="pt-2 border-t border-[var(--line)] flex items-center justify-between text-[11px] font-mono text-[var(--white-70)]">
+            <span>Std : {standardProjectsCount}</span>
+            <span className="text-white">Pro : {proProjectsCount}</span>
+            <span className="text-[var(--red)] font-bold">Prem : {premiumProjectsCount}</span>
           </div>
         </div>
 
         {/* Temps Dédié Global */}
-        <div className="p-6 rounded-3xl apple-card relative overflow-hidden">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
-            <span>Temps Dédié Consommé</span>
-            <Clock className="w-4 h-4 text-[#FF9F0A]" />
+        <div className="panel kpi">
+          <div className="kpi-head">
+            <span className="kpi-label">Temps Dédié Consommé</span>
+            <div className="kpi-icon">
+              <Clock className="w-4 h-4" />
+            </div>
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-              {totalConsumedHours}h
-            </span>
-            <span className="text-xs font-semibold text-slate-400">/ {totalAllocatedHours}h allouées</span>
+          <div className="kpi-value font-mono">
+            {totalConsumedHours}H
           </div>
-          <div className="mt-4 pt-3 border-t border-black/5 dark:border-white/5">
-            <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
-              <div 
-                className="bg-[#FF9F0A] h-full rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(100, Math.round((Number(totalConsumedHours) / (totalAllocatedHours || 1)) * 100))}%` }}
-              />
+          <div className="pt-2 border-t border-[var(--line)] space-y-1">
+            <div className="text-[11px] text-[var(--white-45)] font-mono">
+              Plafond total : {totalAllocatedHours}h allouées
+            </div>
+            <div className="progress">
+              <span style={{ width: `${Math.min(100, Math.round((Number(totalConsumedHours) / (totalAllocatedHours || 1)) * 100))}%` }} />
             </div>
           </div>
         </div>
 
         {/* Progression Moyenne */}
-        <div className="p-6 rounded-3xl apple-card relative overflow-hidden">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
-            <span>Avancement Moyen</span>
-            <TrendingUp className="w-4 h-4 text-[#34C759]" />
+        <div className="panel kpi">
+          <div className="kpi-head">
+            <span className="kpi-label">Avancement Moyen</span>
+            <div className="kpi-icon">
+              <TrendingUp className="w-4 h-4" />
+            </div>
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-              {averageProgress}%
-            </span>
-            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center">
-              Global
-            </span>
+          <div className="kpi-value font-mono">
+            {averageProgress}%
           </div>
-          <div className="mt-4 pt-3 border-t border-black/5 dark:border-white/5">
-            <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
-              <div 
-                className="bg-[#34C759] h-full rounded-full transition-all duration-500"
-                style={{ width: `${averageProgress}%` }}
-              />
+          <div className="pt-2 border-t border-[var(--line)] space-y-1">
+            <div className="text-[11px] text-[var(--white-45)] font-mono">
+              Taux moyen d'exécution
+            </div>
+            <div className="progress">
+              <span style={{ width: `${averageProgress}%` }} />
             </div>
           </div>
         </div>
 
         {/* Écosystème & Administrateurs */}
-        <div className="p-6 rounded-3xl apple-card relative overflow-hidden">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
-            <span>Équipe & Administrateurs</span>
-            <Users className="w-4 h-4 text-[#AF52DE]" />
+        <div className="panel kpi">
+          <div className="kpi-head">
+            <span className="kpi-label">Équipe & Utilisateurs</span>
+            <div className="kpi-icon">
+              <Users className="w-4 h-4" />
+            </div>
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-              {users.length}
-            </span>
-            <span className="text-xs font-semibold text-slate-400">utilisateurs</span>
+          <div className="kpi-value font-mono">
+            {users.length}
           </div>
-          <div className="mt-4 pt-3 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-[11px] text-slate-500">
-            <span>Admins : <strong className="text-slate-800 dark:text-slate-200">{adminUsers.length}</strong></span>
-            <span>Membres : <strong className="text-slate-800 dark:text-slate-200">{users.length - adminUsers.length}</strong></span>
+          <div className="pt-2 border-t border-[var(--line)] flex items-center justify-between text-[11px] font-mono text-[var(--white-70)]">
+            <span>Admins : {adminUsers.length}</span>
+            <span>Membres : {users.length - adminUsers.length}</span>
           </div>
         </div>
       </div>
 
-      {/* 3. Section Principale : Supervision des Projets & Contrôle des Formules (Standard / Pro / Premium) */}
-      <div className="p-7 rounded-3xl apple-card space-y-6">
+      {/* 3. Section Principale : Supervision des Projets & Contrôle des Formules */}
+      <div className="panel space-y-5">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Award className="w-5 h-5 text-[#0071E3] dark:text-[#2997FF]" />
-              Supervision des Projets & Gestion des Formules
+            <h2 className="panel-title text-base">
+              SUPERVISION DES PROJETS & GESTION DES FORMULES
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Faites passer un projet de <strong>Simple (Standard)</strong> à <strong>Pro</strong> ou <strong>Premium</strong> en un clic.
+            <p className="text-xs text-[var(--white-70)] mt-0.5">
+              Attribuez les formules <strong>STANDARD</strong>, <strong>PRO</strong> ou <strong>PREMIUM</strong> pour chaque projet.
             </p>
           </div>
 
-          {/* Filtres & Recherche Apple */}
+          {/* Filtres & Recherche */}
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="relative flex-1 sm:w-60">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <div className="input-group flex-1 sm:w-60">
+              <Search className="w-4 h-4 text-[var(--red)]" />
               <input
                 type="text"
                 placeholder="Rechercher un projet..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="apple-input w-full pl-8 text-xs"
+                className="form-input text-xs"
               />
             </div>
 
             <select
               value={tierFilter}
               onChange={e => setTierFilter(e.target.value as 'all' | ProjectTier)}
-              className="apple-input text-xs font-medium"
+              className="form-select font-mono text-xs w-auto"
             >
-              <option value="all">Toutes les formules</option>
-              <option value="standard">Standard</option>
-              <option value="pro">Pro</option>
-              <option value="premium">Premium</option>
+              <option value="all">TOUTES LES FORMULES</option>
+              <option value="standard">STANDARD</option>
+              <option value="pro">PRO</option>
+              <option value="premium">PREMIUM</option>
             </select>
           </div>
         </div>
 
-        {/* Tableau Apple des Projets */}
-        <div className="overflow-x-auto rounded-2xl border border-black/5 dark:border-white/10">
-          <table className="sentinel-table">
+        {/* Tableau des Projets */}
+        <div className="table-wrap">
+          <table className="table table--wide">
             <thead>
               <tr>
-                <th>Projet & Réf</th>
-                <th>Administrateur Référent</th>
-                <th>Avancement</th>
-                <th>Temps Dédié</th>
-                <th>Niveau Actuel</th>
-                <th className="text-right">Action Super Admin : Attribuer Formule</th>
-                <th>Ouvrir</th>
+                <th>PROJET & RÉF</th>
+                <th>ADMINISTRATEUR LEAD</th>
+                <th>AVANCEMENT</th>
+                <th>TEMPS DÉDIÉ</th>
+                <th>NIVEAU ACTUEL</th>
+                <th>ATTRIBUER FORMULE</th>
+                <th>OUVRIR</th>
               </tr>
             </thead>
             <tbody>
@@ -287,17 +278,17 @@ export function SuperAdminDashboard() {
                 const currentTier = project.tier || 'standard';
 
                 return (
-                  <tr key={project.id} className="transition">
+                  <tr key={project.id}>
                     {/* Nom & Ref */}
                     <td>
                       <div>
-                        <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                        <div className="font-bold text-white flex items-center gap-2">
                           <span>{project.name}</span>
-                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
+                          <span className="badge-role text-[9px]">
                             {project.reference}
                           </span>
                         </div>
-                        <div className="text-[11px] text-slate-400 mt-0.5 line-clamp-1 max-w-xs">
+                        <div className="text-[11px] text-[var(--white-45)] mt-0.5 line-clamp-1 max-w-xs font-normal">
                           {project.description}
                         </div>
                       </div>
@@ -309,13 +300,13 @@ export function SuperAdminDashboard() {
                         <img
                           src={leadAdmin.avatar}
                           alt={leadAdmin.name}
-                          className="w-7 h-7 rounded-full shadow-sm"
+                          className="w-7 h-7 rounded-[var(--r-xs)] border border-[var(--line-strong)]"
                         />
                         <div>
-                          <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                          <div className="text-xs font-bold text-white">
                             {leadAdmin.name}
                           </div>
-                          <div className="text-[10px] text-slate-400">
+                          <div className="text-[10px] text-[var(--white-45)] font-mono">
                             {leadAdmin.jobTitle}
                           </div>
                         </div>
@@ -324,29 +315,24 @@ export function SuperAdminDashboard() {
 
                     {/* Avancement */}
                     <td>
-                      <div className="w-28 space-y-1">
-                        <div className="flex items-center justify-between text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                      <div className="w-28 space-y-1 mx-auto">
+                        <div className="flex items-center justify-between text-[11px] font-mono font-bold text-white">
                           <span>{progressPct}%</span>
-                          <span className="text-[10px] text-slate-400">{doneCount}/{projectTasks.length}</span>
+                          <span className="text-[var(--white-45)] font-normal">{doneCount}/{projectTasks.length}</span>
                         </div>
-                        <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${
-                              progressPct >= 80 ? 'bg-[#34C759]' : progressPct >= 40 ? 'bg-[#0071E3]' : 'bg-[#FF9F0A]'
-                            }`}
-                            style={{ width: `${progressPct}%` }}
-                          />
+                        <div className="progress">
+                          <span style={{ width: `${progressPct}%` }} />
                         </div>
                       </div>
                     </td>
 
                     {/* Temps dédié */}
                     <td>
-                      <div>
-                        <div className="text-xs font-semibold text-slate-900 dark:text-white">
-                          {projectHours}h <span className="text-slate-400 font-normal">/ {allocated}h</span>
+                      <div className="font-mono">
+                        <div className="text-xs font-bold text-white">
+                          {projectHours}h <span className="text-[var(--white-45)] font-normal">/ {allocated}h</span>
                         </div>
-                        <div className="text-[10px] text-slate-400">
+                        <div className="text-[10px] text-[var(--white-45)]">
                           {Math.round((Number(projectHours) / (allocated || 1)) * 100)}% alloué
                         </div>
                       </div>
@@ -354,52 +340,37 @@ export function SuperAdminDashboard() {
 
                     {/* Niveau actuel */}
                     <td>
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide border ${
-                        currentTier === 'premium'
-                          ? 'bg-[#34C759]/10 text-[#34C759] border-[#34C759]/30'
-                          : currentTier === 'pro'
-                          ? 'bg-[#0071E3]/10 text-[#0071E3] dark:text-[#2997FF] border-[#0071E3]/30'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
-                      }`}>
-                        {currentTier}
+                      <span className={`badge ${currentTier === 'premium' ? 'badge--bad' : currentTier === 'pro' ? 'badge--ok' : ''} text-[10px] font-mono`}>
+                        {currentTier.toUpperCase()}
                       </span>
                     </td>
 
                     {/* Action Super Admin : Sélecteur de Formule */}
-                    <td className="text-right">
-                      <div className="inline-flex p-1 rounded-xl bg-[#F5F5F7] dark:bg-[#2C2C2E]/60 border border-black/5 dark:border-white/10 gap-1">
+                    <td>
+                      <div className="tabs">
                         <button
                           type="button"
                           onClick={() => handleTierChange(project, 'standard')}
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition ${
-                            currentTier === 'standard'
-                              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                              : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                          }`}
+                          className="tab"
+                          aria-selected={currentTier === 'standard'}
                         >
-                          Simple
+                          SIMPLE
                         </button>
                         <button
                           type="button"
                           onClick={() => handleTierChange(project, 'pro')}
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition ${
-                            currentTier === 'pro'
-                              ? 'bg-[#0071E3] text-white shadow-sm'
-                              : 'text-slate-500 hover:text-[#0071E3]'
-                          }`}
+                          className="tab"
+                          aria-selected={currentTier === 'pro'}
                         >
-                          Pro
+                          PRO
                         </button>
                         <button
                           type="button"
                           onClick={() => handleTierChange(project, 'premium')}
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition ${
-                            currentTier === 'premium'
-                              ? 'bg-[#34C759] text-white shadow-sm'
-                              : 'text-slate-500 hover:text-[#34C759]'
-                          }`}
+                          className="tab"
+                          aria-selected={currentTier === 'premium'}
                         >
-                          Premium
+                          PREMIUM
                         </button>
                       </div>
                     </td>
@@ -408,10 +379,11 @@ export function SuperAdminDashboard() {
                     <td>
                       <button
                         onClick={() => handleOpenProjectAsAdmin(project.id)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-[#0071E3] hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                        className="btn btn-ghost btn-icon btn-sm"
                         title="Ouvrir la fiche de ce projet"
+                        aria-label="Ouvrir la fiche de ce projet"
                       >
-                        <ExternalLink className="w-4 h-4" />
+                        <ExternalLink className="w-4 h-4 text-[var(--red)]" />
                       </button>
                     </td>
                   </tr>
@@ -423,53 +395,65 @@ export function SuperAdminDashboard() {
       </div>
 
       {/* 4. Répertoire des Administrateurs & Supervision des Discussions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid-2">
         {/* Administrateurs de Projets */}
-        <div className="p-7 rounded-3xl apple-card space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Users className="w-4 h-4 text-[#0071E3] dark:text-[#2997FF]" />
-              Administrateurs & Responsables de Projets
-            </h3>
-            <span className="text-[11px] font-semibold text-slate-400">
-              {adminUsers.length} administrateurs
-            </span>
+        <div className="panel space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 className="panel-title text-sm">
+                RESPONSABLES DE PROJETS & ADMINISTRATEURS
+              </h3>
+              <div className="text-[10px] text-[var(--text-muted)] font-mono">
+                {adminUsers.length} ADMINISTRATEUR(S) ENREGISTRÉ(S)
+              </div>
+            </div>
+            {onOpenAdminConfig && (
+              <button
+                type="button"
+                onClick={onOpenAdminConfig}
+                className="btn btn-secondary btn-sm flex items-center gap-1.5"
+                title="Créer ou configurer un compte administrateur"
+              >
+                <UserPlus className="w-3.5 h-3.5 text-[var(--brand)]" />
+                <span>+ Configurer un Administrateur</span>
+              </button>
+            )}
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {adminUsers.map(admin => {
               const managedProjects = projects.filter(p => p.leadUserId === admin.id);
               return (
                 <div 
                   key={admin.id}
-                  className="p-3.5 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E]/60 border border-black/5 dark:border-white/5 flex items-center justify-between"
+                  className="p-3 rounded-[var(--r-xs)] bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-between transition hover:border-[var(--brand)]"
                 >
                   <div className="flex items-center gap-3">
                     <img 
                       src={admin.avatar} 
                       alt={admin.name} 
-                      className="w-9 h-9 rounded-full shadow-sm"
+                      className="w-8 h-8 rounded-[var(--r-xs)] border border-[var(--border-strong)]"
                     />
                     <div>
-                      <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <div className="text-xs font-bold text-[var(--text)] flex items-center gap-1.5 uppercase">
                         {admin.name}
                         {admin.role === 'super_admin' && (
-                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/10 text-purple-600 font-extrabold uppercase">
-                            Super Admin
+                          <span className="badge badge-role text-[9px]">
+                            SUPER ADMIN
                           </span>
                         )}
                       </div>
-                      <div className="text-[11px] text-slate-500">
+                      <div className="text-[11px] text-[var(--text-muted)] font-mono">
                         {admin.email} • {admin.jobTitle}
                       </div>
                     </div>
                   </div>
 
                   <div className="text-right">
-                    <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                      {managedProjects.length} projet(s)
+                    <div className="text-xs font-bold text-[var(--text)] font-mono">
+                      {managedProjects.length} PROJET(S)
                     </div>
-                    <div className="text-[10px] text-slate-400">
+                    <div className="text-[10px] text-[var(--text-muted)] font-mono">
                       {managedProjects.map(p => p.reference).join(', ') || 'Aucun'}
                     </div>
                   </div>
@@ -480,35 +464,34 @@ export function SuperAdminDashboard() {
         </div>
 
         {/* Supervision des Forums de Projets */}
-        <div className="p-7 rounded-3xl apple-card space-y-4">
+        <div className="panel space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-[#34C759]" />
-              Activité des Forums & Discussions Projets
+            <h3 className="panel-title text-sm">
+              ACTIVITÉ RÉCENTE DU FORUM
             </h3>
-            <span className="text-[11px] font-semibold text-slate-400">
-              {forumTopics.length} discussions
+            <span className="badge text-[10px] font-mono">
+              {forumTopics.length} SUJETS
             </span>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {forumTopics.slice(0, 4).map(topic => {
               const project = projects.find(p => p.id === topic.projectId);
               return (
                 <div 
                   key={topic.id}
-                  className="p-3.5 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E]/60 border border-black/5 dark:border-white/5 flex items-center justify-between"
+                  className="p-3 rounded-[var(--r-xs)] bg-black border border-[var(--line)] flex items-center justify-between"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-semibold text-[#0071E3] dark:text-[#2997FF] bg-[#0071E3]/10 px-1.5 py-0.5 rounded">
-                        {project?.reference || 'Projet'}
+                      <span className="badge-role text-[9px]">
+                        {project?.reference || 'PRJ'}
                       </span>
-                      <span className="text-xs font-semibold text-slate-900 dark:text-white">
+                      <span className="text-xs font-bold text-white line-clamp-1">
                         {topic.title}
                       </span>
                     </div>
-                    <div className="text-[11px] text-slate-500">
+                    <div className="text-[11px] text-[var(--white-45)] font-mono">
                       Par {topic.authorName} • {topic.replyCount} réponse(s)
                     </div>
                   </div>
@@ -518,9 +501,9 @@ export function SuperAdminDashboard() {
                       if (topic.projectId) setActiveProjectId(topic.projectId);
                       setActiveView('forum');
                     }}
-                    className="apple-btn-secondary text-[11px] py-1 px-3"
+                    className="btn btn-secondary btn-sm"
                   >
-                    Voir Forum
+                    VOIR
                   </button>
                 </div>
               );

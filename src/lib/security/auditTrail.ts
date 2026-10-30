@@ -6,36 +6,9 @@
  */
 
 import { calculateSha256 } from './crypto.ts';
+import type { AuditActionType, AuditEntry } from '../../types/sentinel.ts';
 
-export type AuditActionType =
-  | 'user_login'
-  | 'user_logout'
-  | 'role_change'
-  | 'task_created'
-  | 'task_updated'
-  | 'task_deleted'
-  | 'project_created'
-  | 'project_archived'
-  | 'budget_updated'
-  | 'expense_approved'
-  | 'gdpr_data_export'
-  | 'gdpr_anonymization'
-  | 'security_alert'
-  | 'settings_updated';
-
-export interface AuditEntry {
-  id: string;
-  sequenceNumber: number;
-  timestamp: string;
-  userId: string;
-  userName: string;
-  action: AuditActionType;
-  entityType: 'project' | 'task' | 'user' | 'budget' | 'security' | 'system';
-  entityId: string;
-  details: Record<string, unknown>;
-  previousHash: string;
-  hash: string;
-}
+export type { AuditActionType, AuditEntry };
 
 export interface AuditVerificationResult {
   isValid: boolean;
@@ -45,6 +18,7 @@ export interface AuditVerificationResult {
 }
 
 export const GENESIS_HASH = '0000000000000000000000000000000000000000000000000000000000000000';
+export const AUDIT_STORAGE_KEY = 'sentinel_audit_trail_v1';
 
 /**
  * Sérialise un objet en JSON canonique déterministe (clés triées)
@@ -174,4 +148,188 @@ export async function verifyAuditTrailIntegrity(
     isValid: true,
     totalEntries: trail.length,
   };
+}
+
+/**
+ * Sauvegarde une entrée d'audit dans la persistance locale (Dexie/localStorage)
+ * et tente l'enregistrement synchrone ou asynchrone dans Supabase (PostgreSQL append-only).
+ */
+export async function saveAuditEntryToPersistence(entry: AuditEntry): Promise<void> {
+  // 1. Sauvegarde dans Dexie (IndexedDB)
+  try {
+    if (typeof window !== 'undefined') {
+      const { db } = await import('../repository/dexieDb');
+      if (db?.auditLogs) {
+        await db.auditLogs.put(entry);
+      }
+    }
+  } catch (dexieErr) {
+    console.warn('Persistance Dexie non disponible pour le journal d audit:', dexieErr);
+  }
+
+  // 2. Sauvegarde de secours dans le localStorage (pour accès instantané hors-ligne)
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem(AUDIT_STORAGE_KEY);
+      const currentList: AuditEntry[] = raw ? JSON.parse(raw) : [];
+      if (!currentList.some(item => item.id === entry.id)) {
+        currentList.push(entry);
+        localStorage.setItem(AUDIT_STORAGE_KEY, JSON.stringify(currentList));
+      }
+    } catch {
+      // Ignore les quotas localStorage
+    }
+  }
+
+  // 3. Enregistrement distant dans Supabase si connecté
+  if (typeof window !== 'undefined') {
+    try {
+      const { createClient, isSupabaseConfigured } = await import('../supabase/client');
+      if (isSupabaseConfigured()) {
+        const supabase = createClient();
+        await supabase.from('audit_logs').insert({
+          id: entry.id,
+          workspace_id: entry.workspaceId || null,
+          user_id: entry.userId,
+          action: entry.action,
+          entity_type: entry.entityType,
+          entity_id: entry.entityId,
+          previous_hash: entry.previousHash,
+          hash: entry.hash,
+          metadata: {
+            userName: entry.userName,
+            sequenceNumber: entry.sequenceNumber,
+            details: entry.details,
+          },
+          created_at: entry.timestamp,
+        });
+      }
+    } catch (supaErr) {
+      console.warn('Synchronisation distante du journal d audit différée:', supaErr);
+    }
+  }
+}
+
+/**
+ * Charge l'intégralité de la piste d'audit certifiée.
+ * Priorise Supabase (serveur immuable) si disponible, avec repli transparent sur Dexie / localStorage.
+ */
+export async function loadPersistentAuditTrail(workspaceId?: string): Promise<AuditEntry[]> {
+  // 1. Essai de lecture depuis Supabase
+  if (typeof window !== 'undefined') {
+    try {
+      const { createClient, isSupabaseConfigured } = await import('../supabase/client');
+      if (isSupabaseConfigured()) {
+        const supabase = createClient();
+        let query = supabase.from('audit_logs').select('*').order('created_at', { ascending: true });
+        if (workspaceId) {
+          query = query.eq('workspace_id', workspaceId);
+        }
+        const { data, error } = await query;
+        if (!error && data && data.length > 0) {
+          interface SupabaseAuditRow {
+            id: string | number;
+            user_id?: string | null;
+            action: string;
+            entity_type: string;
+            entity_id?: string | null;
+            previous_hash?: string | null;
+            hash?: string | null;
+            workspace_id?: string | null;
+            created_at?: string | null;
+            metadata?: {
+              userName?: string;
+              sequenceNumber?: number;
+              details?: Record<string, unknown>;
+            } | null;
+          }
+          return (data as unknown as SupabaseAuditRow[]).map((row, idx: number) => ({
+            id: String(row.id),
+            sequenceNumber: Number(row.metadata?.sequenceNumber ?? (idx + 1)),
+            timestamp: String(row.created_at || new Date().toISOString()),
+            userId: String(row.user_id || ''),
+            userName: String(row.metadata?.userName || 'Utilisateur'),
+            action: row.action as AuditActionType,
+            entityType: row.entity_type as AuditEntry['entityType'],
+            entityId: String(row.entity_id || ''),
+            details: (row.metadata?.details as Record<string, unknown>) || {},
+            previousHash: String(row.previous_hash || (idx === 0 ? GENESIS_HASH : '')),
+            hash: String(row.hash || ''),
+            workspaceId: row.workspace_id ? String(row.workspace_id) : undefined,
+          }));
+        }
+      }
+    } catch {
+      // Repli sur stockage local
+    }
+  }
+
+  // 2. Repli sur Dexie (IndexedDB)
+  try {
+    if (typeof window !== 'undefined') {
+      const { db } = await import('../repository/dexieDb');
+      if (db?.auditLogs) {
+        const localRecords = await db.auditLogs.toArray();
+        if (localRecords && localRecords.length > 0) {
+          const filtered = workspaceId
+            ? localRecords.filter(r => !r.workspaceId || r.workspaceId === workspaceId)
+            : localRecords;
+          return filtered.sort((a, b) => a.sequenceNumber - b.sequenceNumber);
+        }
+      }
+    }
+  } catch {
+    // Repli sur localStorage
+  }
+
+  // 3. Repli ultime sur le cache localStorage
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem(AUDIT_STORAGE_KEY);
+      if (raw) {
+        const parsed: AuditEntry[] = JSON.parse(raw);
+        const filtered = workspaceId
+          ? parsed.filter(r => !r.workspaceId || r.workspaceId === workspaceId)
+          : parsed;
+        return filtered.sort((a, b) => a.sequenceNumber - b.sequenceNumber);
+      }
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+}
+
+/**
+ * Enregistre un événement audité en garantissant l'enchaînement cryptographique SHA-256.
+ */
+export async function recordSecureAuditEvent(params: {
+  userId: string;
+  userName: string;
+  action: AuditActionType;
+  entityType: AuditEntry['entityType'];
+  entityId: string;
+  details?: Record<string, unknown>;
+  workspaceId?: string;
+}): Promise<AuditEntry> {
+  const currentTrail = await loadPersistentAuditTrail(params.workspaceId);
+  const newEntry = await createAuditEntry(
+    {
+      userId: params.userId,
+      userName: params.userName,
+      action: params.action,
+      entityType: params.entityType,
+      entityId: params.entityId,
+      details: params.details,
+    },
+    currentTrail
+  );
+
+  if (params.workspaceId) {
+    newEntry.workspaceId = params.workspaceId;
+  }
+
+  await saveAuditEntryToPersistence(newEntry);
+  return newEntry;
 }

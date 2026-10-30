@@ -442,6 +442,37 @@ export interface AuditLogEntry {
   at: string;
 }
 
+export type AuditActionType =
+  | 'user_login'
+  | 'user_logout'
+  | 'role_change'
+  | 'task_created'
+  | 'task_updated'
+  | 'task_deleted'
+  | 'project_created'
+  | 'project_archived'
+  | 'budget_updated'
+  | 'expense_approved'
+  | 'gdpr_data_export'
+  | 'gdpr_anonymization'
+  | 'security_alert'
+  | 'settings_updated';
+
+export interface AuditEntry {
+  id: string;
+  sequenceNumber: number;
+  timestamp: string;
+  userId: string;
+  userName: string;
+  action: AuditActionType;
+  entityType: 'project' | 'task' | 'user' | 'budget' | 'security' | 'system';
+  entityId: string;
+  details: Record<string, unknown>;
+  previousHash: string;
+  hash: string;
+  workspaceId?: string;
+}
+
 export interface MemberRate {
   userId: string;
   hourlyRate: number;

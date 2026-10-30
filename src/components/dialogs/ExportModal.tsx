@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { X, Download, FileSpreadsheet, FileCode, Printer, CheckCircle2, Clock, DollarSign } from 'lucide-react';
 import { useSentinel } from '@/lib/store';
+import { useTheme } from '@/context/ThemeContext';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ export function ExportModal({ isOpen, onClose }: ExportModalProps) {
     projects, phases, tasks, dependencies, milestones,
     expenses, budgets, timeEntries, sprints, wikiPages, risks, users
   } = useSentinel();
+  const { themeData } = useTheme();
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [exportMessage, setExportMessage] = useState('Export téléchargé avec succès !');
 
@@ -81,7 +83,7 @@ export function ExportModal({ isOpen, onClose }: ExportModalProps) {
       `"${e.title.replace(/"/g, '""')}"`,
       `"${e.category}"`,
       `"${e.amount}"`,
-      `"${workspace.currency || '€'}"`,
+      `"${workspace.currency || 'FCFA'}"`,
       `"${e.status}"`,
       `"${e.date}"`,
       `"${e.createdBy}"`,
@@ -131,20 +133,20 @@ export function ExportModal({ isOpen, onClose }: ExportModalProps) {
     };
 
     const priorityLabels: Record<string, string> = {
-      urgent: 'Urgente',
+      urgent: 'Critique / Urgente',
       high: 'Haute',
       medium: 'Moyenne',
-      low: 'Basse',
+      low: 'Faible',
     };
 
     const rowsHtml = filteredTasks.map(t => `
       <tr>
-        <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; font-family: monospace; font-size: 11px;">${t.id}</td>
-        <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; font-weight: 600;">${t.title}</td>
-        <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0;">${statusLabels[t.status] || t.status}</td>
-        <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0;">${priorityLabels[t.priority] || t.priority}</td>
-        <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0;">${t.dueDate || '-'}</td>
-        <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; text-align: right;">${Math.round((t.estimateMinutes || 0) / 60)} h</td>
+        <td style="padding: 10px 14px; border-bottom: 1px solid #242424; font-family: 'JetBrains Mono', monospace; font-size: 11px;">${t.id}</td>
+        <td style="padding: 10px 14px; border-bottom: 1px solid #242424; font-weight: 600;">${t.title}</td>
+        <td style="padding: 10px 14px; border-bottom: 1px solid #242424; text-align: center;">${statusLabels[t.status] || t.status}</td>
+        <td style="padding: 10px 14px; border-bottom: 1px solid #242424; text-align: center;">${priorityLabels[t.priority] || t.priority}</td>
+        <td style="padding: 10px 14px; border-bottom: 1px solid #242424; text-align: center; font-family: 'JetBrains Mono', monospace;">${t.dueDate || '-'}</td>
+        <td style="padding: 10px 14px; border-bottom: 1px solid #242424; text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700;">${Math.round((t.estimateMinutes || 0) / 60)} h</td>
       </tr>
     `).join('');
 
@@ -155,21 +157,24 @@ export function ExportModal({ isOpen, onClose }: ExportModalProps) {
         <meta charset="utf-8">
         <title>Rapport - ${currentProject?.name || workspace.name}</title>
         <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 32px; color: #0F172A; }
-          h1 { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
-          .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; border-bottom: 2px solid #0066FF; padding-bottom: 16px; }
+          @page { size: A4; margin: 14mm; }
+          body { font-family: 'Chakra Petch', system-ui, sans-serif; padding: 24px; color: #000; background: #FFF; }
+          h1 { font-size: 18px; font-weight: 800; margin-bottom: 4px; text-transform: uppercase; }
+          .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; border-bottom: 2px solid ${themeData.colors.primary}; padding-bottom: 12px; }
           table { width: 100%; border-collapse: collapse; font-size: 12px; }
-          th { text-align: left; padding: 8px 12px; background: #F8FAFC; border-bottom: 2px solid #CBD5E1; color: #475569; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; }
+          th { text-align: center; padding: 10px 14px; background: ${themeData.colors.primary} !important; color: #FFFFFF !important; text-transform: uppercase; font-size: 10px; letter-spacing: 0.06em; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          th:first-child { text-align: left; }
+          th:last-child { text-align: right; }
         </style>
       </head>
       <body>
         <div class="header">
           <div>
             <h1>SENTINEL GESTION — ${currentProject?.name || workspace.name}</h1>
-            <p style="margin: 0; font-size: 12px; color: #64748B;">Généré le ${new Date().toLocaleDateString('fr-FR')}</p>
+            <p style="margin: 0; font-size: 11px; color: #444; font-family: 'JetBrains Mono', monospace;">Généré le ${new Date().toLocaleDateString('fr-FR')}</p>
           </div>
-          <div style="text-align: right; font-size: 12px; color: #64748B;">
-            <strong>${filteredTasks.length} tâche(s)</strong>
+          <div style="text-align: right; font-size: 11px; font-family: 'JetBrains Mono', monospace;">
+            <strong>${filteredTasks.length} TÂCHE(S)</strong>
           </div>
         </div>
         <table>
@@ -199,53 +204,60 @@ export function ExportModal({ isOpen, onClose }: ExportModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white dark:bg-[#0F172A] rounded-2xl p-6 max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-5">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+    <div className="modal-overlay" onClick={onClose}>
+      <div 
+        className="modal max-w-lg w-full"
+        onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="flex items-center justify-between pb-3 border-b border-[var(--line)] mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-[#0066FF]">
-              <Download className="w-4 h-4" />
-            </div>
+            <Download className="w-5 h-5 text-[var(--red)]" />
             <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                Exporter & Sauvegarder
+              <h3 className="modal-title mb-0">
+                EXPORTER & SAUVEGARDER
               </h3>
-              <p className="text-xs text-slate-500">
-                Formats compatibles Excel, PDF et sauvegarde complète
+              <p className="text-xs text-[var(--white-70)]">
+                Centre d’Exportation — Formats compatibles Excel, PDF et sauvegarde complète
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-            <X className="w-5 h-5" />
+          <button 
+            onClick={onClose} 
+            className="btn btn-ghost btn-icon btn-sm"
+            aria-label="Fermer la modale"
+          >
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {downloadSuccess ? (
-          <div className="py-8 text-center space-y-2">
-            <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
-            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+          <div className="py-8 text-center space-y-3">
+            <CheckCircle2 className="w-12 h-12 text-white mx-auto border-2 border-[var(--red)] rounded-full p-2 bg-[var(--red-tint)]" />
+            <h4 className="text-sm font-bold text-white uppercase tracking-wider">
               {exportMessage}
             </h4>
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-xs text-slate-600 dark:text-slate-300">
-              Sélectionnez le format d’export souhaité pour vos données :
+            <p className="text-xs text-[var(--white-70)] uppercase tracking-wider font-bold">
+              Sélectionnez le format d’export souhaité :
             </p>
 
             {/* CSV Tâches */}
             <button
               onClick={handleExportTasksCSV}
-              className="flex items-center gap-3 w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-[#0066FF] hover:bg-blue-50/30 dark:hover:bg-blue-950/20 text-left transition group"
+              className="flex items-center gap-3 w-full p-3 rounded-[var(--r-sm)] bg-black border border-[var(--line)] hover:border-[var(--red-soft)] hover:bg-[var(--red-tint)] text-left transition group"
             >
-              <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+              <div className="p-2 rounded-[var(--r-xs)] border border-[var(--red-soft)] text-[var(--red)] flex-none">
                 <FileSpreadsheet className="w-4 h-4" />
               </div>
               <div className="flex-1">
-                <span className="block text-xs font-bold text-slate-900 dark:text-white group-hover:text-[#0066FF]">
-                  Tâches — CSV Excel ({filteredTasks.length} tâches)
+                <span className="block text-xs font-bold text-white uppercase tracking-wider">
+                  Exporter les Tâches (CSV) — Excel ({filteredTasks.length} tâches)
                 </span>
-                <span className="block text-[11px] text-slate-400">
+                <span className="block text-[11px] text-[var(--white-45)]">
                   Format standard UTF-8 séparateur point-virgule
                 </span>
               </div>
@@ -254,16 +266,16 @@ export function ExportModal({ isOpen, onClose }: ExportModalProps) {
             {/* CSV Pointages */}
             <button
               onClick={handleExportTimesheetCSV}
-              className="flex items-center gap-3 w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-[#0066FF] hover:bg-blue-50/30 dark:hover:bg-blue-950/20 text-left transition group"
+              className="flex items-center gap-3 w-full p-3 rounded-[var(--r-sm)] bg-black border border-[var(--line)] hover:border-[var(--red-soft)] hover:bg-[var(--red-tint)] text-left transition group"
             >
-              <div className="p-2 rounded-lg bg-cyan-100 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300">
+              <div className="p-2 rounded-[var(--r-xs)] border border-[var(--red-soft)] text-[var(--red)] flex-none">
                 <Clock className="w-4 h-4" />
               </div>
               <div className="flex-1">
-                <span className="block text-xs font-bold text-slate-900 dark:text-white group-hover:text-[#0066FF]">
+                <span className="block text-xs font-bold text-white uppercase tracking-wider">
                   Feuilles de temps — CSV ({timeEntries.length} sessions)
                 </span>
-                <span className="block text-[11px] text-slate-400">
+                <span className="block text-[11px] text-[var(--white-45)]">
                   Détail des heures pointées par collaborateur
                 </span>
               </div>
@@ -272,16 +284,16 @@ export function ExportModal({ isOpen, onClose }: ExportModalProps) {
             {/* CSV Finances */}
             <button
               onClick={handleExportExpensesCSV}
-              className="flex items-center gap-3 w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-[#0066FF] hover:bg-blue-50/30 dark:hover:bg-blue-950/20 text-left transition group"
+              className="flex items-center gap-3 w-full p-3 rounded-[var(--r-sm)] bg-black border border-[var(--line)] hover:border-[var(--red-soft)] hover:bg-[var(--red-tint)] text-left transition group"
             >
-              <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300">
+              <div className="p-2 rounded-[var(--r-xs)] border border-[var(--red-soft)] text-[var(--red)] flex-none">
                 <DollarSign className="w-4 h-4" />
               </div>
               <div className="flex-1">
-                <span className="block text-xs font-bold text-slate-900 dark:text-white group-hover:text-[#0066FF]">
+                <span className="block text-xs font-bold text-white uppercase tracking-wider">
                   Dépenses & Budget — CSV ({expenses.length} dépenses)
                 </span>
-                <span className="block text-[11px] text-slate-400">
+                <span className="block text-[11px] text-[var(--white-45)]">
                   Imputations directes, catégories et règlements
                 </span>
               </div>
@@ -290,17 +302,17 @@ export function ExportModal({ isOpen, onClose }: ExportModalProps) {
             {/* Rapport imprimable */}
             <button
               onClick={handleExportPrintPDF}
-              className="flex items-center gap-3 w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-[#0066FF] hover:bg-blue-50/30 dark:hover:bg-blue-950/20 text-left transition group"
+              className="flex items-center gap-3 w-full p-3 rounded-[var(--r-sm)] bg-black border border-[var(--line)] hover:border-[var(--red-soft)] hover:bg-[var(--red-tint)] text-left transition group"
             >
-              <div className="p-2 rounded-lg bg-rose-100 dark:bg-rose-950/60 text-[#FF1E27]">
+              <div className="p-2 rounded-[var(--r-xs)] border border-[var(--red-soft)] text-[var(--red)] flex-none">
                 <Printer className="w-4 h-4" />
               </div>
               <div className="flex-1">
-                <span className="block text-xs font-bold text-slate-900 dark:text-white group-hover:text-[#0066FF]">
+                <span className="block text-xs font-bold text-white uppercase tracking-wider">
                   Rapport imprimable / Export PDF
                 </span>
-                <span className="block text-[11px] text-slate-400">
-                  Mise en page épurée prête pour impression immédiate
+                <span className="block text-[11px] text-[var(--white-45)]">
+                  Mise en page épurée conforme Section 13 (en-tête rouge plein)
                 </span>
               </div>
             </button>
@@ -308,17 +320,17 @@ export function ExportModal({ isOpen, onClose }: ExportModalProps) {
             {/* Sauvegarde JSON */}
             <button
               onClick={handleExportFullJSON}
-              className="flex items-center gap-3 w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-[#0066FF] hover:bg-blue-50/30 dark:hover:bg-blue-950/20 text-left transition group bg-slate-50/50 dark:bg-slate-900/40"
+              className="flex items-center gap-3 w-full p-3 rounded-[var(--r-sm)] bg-black border border-[var(--red-soft)] hover:border-[var(--red)] hover:bg-[var(--red-tint)] text-left transition group"
             >
-              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-950/60 text-[#0066FF]">
+              <div className="p-2 rounded-[var(--r-xs)] border border-[var(--red)] text-[var(--red)] flex-none">
                 <FileCode className="w-4 h-4" />
               </div>
               <div className="flex-1">
-                <span className="block text-xs font-bold text-slate-900 dark:text-white group-hover:text-[#0066FF]">
+                <span className="block text-xs font-bold text-white uppercase tracking-wider">
                   Sauvegarde intégrale JSON (Toutes entités)
                 </span>
-                <span className="block text-[11px] text-slate-400">
-                  Sauvegarde complète : Projets, Tâches, Finances, Wikis, Sprints, Risques
+                <span className="block text-[11px] text-[var(--white-45)]">
+                  Sauvegarde complète : Projets, Tâches, Finances, Sprints, Risques
                 </span>
               </div>
             </button>

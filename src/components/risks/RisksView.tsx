@@ -2,16 +2,22 @@
 
 import React, { useState, useMemo } from 'react';
 import { 
-  AlertTriangle, ShieldAlert, Plus, Trash2, 
-  CheckCircle2, ArrowRight, ShieldCheck, Activity
+  ShieldAlert, Plus, Trash2, 
+  ShieldCheck, Activity
 } from 'lucide-react';
 import { useSentinel } from '@/lib/store';
 import { ProjectRisk, RiskSeverity } from '@/types/sentinel';
+import { Badge } from '@/components/ui/Badge';
+import { Modal } from '@/components/ui/Modal';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
+import { Select } from '@/components/ui/Select';
+import { Button } from '@/components/ui/Button';
 
 export function RisksView() {
   const { 
     risks, createRisk, updateRiskStatus, deleteRisk, 
-    activeProjectId, currentProject, users, currentUser, projects 
+    activeProjectId, currentUser, projects 
   } = useSentinel();
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -19,7 +25,6 @@ export function RisksView() {
   const [riskDesc, setRiskDesc] = useState('');
   const [riskProb, setRiskProb] = useState<number>(3);
   const [riskImpact, setRiskImpact] = useState<number>(3);
-  const [riskOwnerId, setRiskOwnerId] = useState<string>(currentUser.id);
   const [riskMitigation, setRiskMitigation] = useState('');
 
   const [severityFilter, setSeverityFilter] = useState<RiskSeverity | 'all'>('all');
@@ -36,7 +41,6 @@ export function RisksView() {
   }, [risks, activeProjectId, severityFilter]);
 
   const criticalCount = projectRisks.filter(r => r.severity === 'critical' || r.severity === 'high').length;
-  const mitigatingCount = projectRisks.filter(r => r.status === 'mitigating').length;
   const closedCount = projectRisks.filter(r => r.status === 'closed').length;
 
   const calculateSeverity = (prob: number, impact: number): RiskSeverity => {
@@ -47,8 +51,18 @@ export function RisksView() {
     return 'low';
   };
 
-  const handleCreateRisk = (e: React.FormEvent) => {
-    e.preventDefault();
+  const getSeverityBadgeVariant = (sev: RiskSeverity) => {
+    switch (sev) {
+      case 'critical': return 'danger';
+      case 'high': return 'warning';
+      case 'medium': return 'info';
+      case 'low': return 'success';
+      default: return 'default';
+    }
+  };
+
+  const handleCreateRisk = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!riskTitle.trim()) return;
 
     const fallbackProjectId = projects[0]?.id || 'prj-1';
@@ -63,7 +77,7 @@ export function RisksView() {
       impact: riskImpact as ProjectRisk['impact'],
       severity,
       status: 'identified',
-      ownerId: riskOwnerId,
+      ownerId: currentUser.id,
       mitigationPlan: riskMitigation,
     });
 
@@ -74,116 +88,125 @@ export function RisksView() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* En-tête du module Risques */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-5 bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-red-50 dark:bg-red-950/50 flex items-center justify-center text-[#FF1E27] shadow-sm">
-            <ShieldAlert className="w-6 h-6" />
+      <div className="panel flex flex-wrap items-center justify-between gap-4 border border-[var(--border)] bg-[var(--surface)] p-5 rounded-[var(--r-md)]">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-[var(--r-sm)] border border-[var(--brand)]/40 bg-[var(--brand)]/10 flex items-center justify-center text-[var(--brand)]">
+            <ShieldAlert className="w-5 h-5 text-[var(--brand)]" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">
-              Gestion des Risques & Matrice de Criticité
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[var(--brand)] shadow-[var(--glow-sm)]" />
+              <h1 className="text-base font-bold text-[var(--text)] uppercase tracking-wider">
+                GESTION DES RISQUES & MATRICE DE CRITICITÉ
+              </h1>
+            </div>
+            <p className="text-xs text-[var(--text-muted)] mt-0.5">
               Anticipez les points de blocage, évaluez probabilité/impact et pilotez les plans de mitigation
             </p>
           </div>
         </div>
 
-        <button
+        <Button
+          variant="primary"
+          size="sm"
           onClick={() => setShowAddModal(true)}
-          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#0066FF] hover:bg-blue-600 rounded-xl shadow-md shadow-blue-500/20 transition"
+          icon={<Plus className="w-4 h-4" />}
         >
-          <Plus className="w-4 h-4" />
-          <span>Identifier un risque</span>
-        </button>
+          IDENTIFIER UN RISQUE
+        </Button>
       </div>
 
       {/* KPI de criticité avec filtrage interactif */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <button
+          type="button"
           onClick={() => setSeverityFilter('all')}
-          className={`p-5 rounded-2xl bg-white dark:bg-[#0F172A] border text-left transition shadow-sm ${
-            severityFilter === 'all' ? 'border-[#0066FF] ring-2 ring-blue-500/20' : 'border-slate-200 dark:border-slate-800'
+          className={`panel kpi text-left cursor-pointer transition p-4 rounded-[var(--r-sm)] bg-[var(--surface)] border ${
+            severityFilter === 'all' ? 'border-[var(--brand)] shadow-[0_0_12px_rgba(255,0,0,0.25)]' : 'border-[var(--border)] hover:border-[var(--border-strong)]'
           }`}
         >
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Risques Déclarés</span>
-          <div className="mt-2 text-2xl font-black text-slate-900 dark:text-white">
+          <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider block">Total Risques Déclarés</span>
+          <div className="text-2xl font-bold font-mono text-[var(--text)] my-1">
             {risks.length}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">Cliquez pour voir tout</span>
+          <span className="text-[11px] text-[var(--text-muted)]">Tous les risques déclarés</span>
         </button>
 
         <button
+          type="button"
           onClick={() => setSeverityFilter(severityFilter === 'critical' ? 'all' : 'critical')}
-          className={`p-5 rounded-2xl bg-white dark:bg-[#0F172A] border text-left transition shadow-sm ${
-            severityFilter === 'critical' ? 'border-red-500 ring-2 ring-red-500/20' : 'border-slate-200 dark:border-slate-800'
+          className={`panel kpi text-left cursor-pointer transition p-4 rounded-[var(--r-sm)] bg-[var(--surface)] border ${
+            severityFilter === 'critical' ? 'border-[var(--button-danger-bg)] shadow-[0_0_12px_rgba(255,0,0,0.35)]' : 'border-[var(--border)] hover:border-[var(--border-strong)]'
           }`}
         >
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Risques Critiques</span>
-          <div className="mt-2 text-2xl font-black text-[#FF1E27]">
+          <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider block">Risques Critiques</span>
+          <div className="text-2xl font-bold font-mono text-[var(--button-danger-bg)] my-1">
             {criticalCount}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">Filtrer les plus urgents</span>
+          <span className="text-[11px] text-[var(--button-danger-bg)] font-semibold">Filtrer les plus urgents</span>
         </button>
 
         <button
+          type="button"
           onClick={() => setSeverityFilter(severityFilter === 'high' ? 'all' : 'high')}
-          className={`p-5 rounded-2xl bg-white dark:bg-[#0F172A] border text-left transition shadow-sm ${
-            severityFilter === 'high' ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-slate-200 dark:border-slate-800'
+          className={`panel kpi text-left cursor-pointer transition p-4 rounded-[var(--r-sm)] bg-[var(--surface)] border ${
+            severityFilter === 'high' ? 'border-[var(--brand)] shadow-[0_0_12px_rgba(255,0,0,0.25)]' : 'border-[var(--border)] hover:border-[var(--border-strong)]'
           }`}
         >
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Risques Élevés</span>
-          <div className="mt-2 text-2xl font-black text-amber-500">
+          <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider block">Risques Élevés</span>
+          <div className="text-2xl font-bold font-mono text-[var(--text)] my-1">
             {risks.filter(r => r.severity === 'high').length}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">Filtrer criticité haute</span>
+          <span className="text-[11px] text-[var(--text-muted)]">Filtrer criticité haute</span>
         </button>
 
         <button
+          type="button"
           onClick={() => setSeverityFilter(severityFilter === 'low' ? 'all' : 'low')}
-          className={`p-5 rounded-2xl bg-white dark:bg-[#0F172A] border text-left transition shadow-sm ${
-            severityFilter === 'low' ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200 dark:border-slate-800'
+          className={`panel kpi text-left cursor-pointer transition p-4 rounded-[var(--r-sm)] bg-[var(--surface)] border ${
+            severityFilter === 'low' ? 'border-[var(--brand)] shadow-[0_0_12px_rgba(255,0,0,0.25)]' : 'border-[var(--border)] hover:border-[var(--border-strong)]'
           }`}
         >
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Risques Modérés / Faibles</span>
-          <div className="mt-2 text-2xl font-black text-emerald-600">
+          <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider block">Sous Contrôle / Clôturés</span>
+          <div className="text-2xl font-bold font-mono text-[var(--text)] my-1">
             {closedCount}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">Filtrer sous contrôle</span>
+          <span className="text-[11px] text-[var(--text-muted)]">Filtrer sous contrôle</span>
         </button>
       </div>
 
       {/* Matrice 5x5 Heatmap & Liste des Risques */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Colonne gauche : Matrice 5x5 visuelle */}
-        <div className="p-5 bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-          <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Activity className="w-4 h-4 text-[#FF1E27]" />
-            Matrice 5×5 (Impact × Probabilité)
+        <div className="panel space-y-4 border border-[var(--border)] bg-[var(--surface)] p-5 rounded-[var(--r-md)]">
+          <h3 className="panel-title mb-0 flex items-center gap-2 text-xs font-bold text-[var(--text)] uppercase tracking-wider">
+            <Activity className="w-4 h-4 text-[var(--brand)]" />
+            MATRICE 5×5 (INTENSITÉ DE CRITICITÉ)
           </h3>
 
           <div className="space-y-1 pt-2">
-            {/* Grille 5x5 simplifiée */}
-            <div className="grid grid-cols-5 gap-1.5 text-center text-[10px] font-bold">
+            <div className="grid grid-cols-5 gap-1 text-center font-mono text-[10px]">
               {[5, 4, 3, 2, 1].map(imp => (
                 <React.Fragment key={imp}>
                   {[1, 2, 3, 4, 5].map(prob => {
                     const score = imp * prob;
                     const matchingRisks = projectRisks.filter(r => r.impact === imp && r.probability === prob);
-                    const bgClass = 
-                      score >= 16 ? 'bg-red-500 text-white' :
-                      score >= 10 ? 'bg-amber-500 text-white' :
-                      score >= 5 ? 'bg-yellow-400 text-slate-900' :
-                      'bg-emerald-400 text-slate-900';
+                    
+                    const bgStyle = 
+                      score >= 16 ? { background: 'var(--button-danger-bg)', color: '#FFFFFF', border: '1px solid var(--button-danger-bg)' } :
+                      score >= 10 ? { background: 'rgba(255, 60, 60, 0.45)', color: 'var(--text)', border: '1px solid rgba(255, 60, 60, 0.6)' } :
+                      score >= 5 ? { background: 'var(--surface-2)', color: 'var(--text)', border: '1px solid var(--border)' } :
+                      { background: 'var(--surface)', color: 'var(--text-muted)', border: '1px solid var(--border)' };
 
                     return (
                       <div
                         key={`${imp}-${prob}`}
-                        title={`Impact ${imp} / Probabilité ${prob} (${matchingRisks.length} risque(s))`}
-                        className={`h-11 rounded-lg flex flex-col items-center justify-center transition-all ${bgClass} ${
-                          matchingRisks.length > 0 ? 'ring-2 ring-blue-500 shadow-md font-black scale-105' : 'opacity-60'
+                        title={`Impact ${imp} / Probabilité ${prob} (${matchingRisks.length} risque(s))` }
+                        style={bgStyle}
+                        className={`h-11 rounded-[var(--r-xs)] flex flex-col items-center justify-center transition-all ${
+                          matchingRisks.length > 0 ? 'ring-2 ring-[var(--brand)] font-bold shadow-xs' : ''
                         }`}
                       >
                         <span>{matchingRisks.length > 0 ? `${matchingRisks.length}R` : score}</span>
@@ -194,7 +217,7 @@ export function RisksView() {
               ))}
             </div>
 
-            <div className="flex items-center justify-between text-[11px] text-slate-400 pt-2 font-semibold">
+            <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] pt-2 uppercase tracking-wider font-mono">
               <span>Faible (1)</span>
               <span>Impact ➔</span>
               <span>Critique (5)</span>
@@ -203,41 +226,36 @@ export function RisksView() {
         </div>
 
         {/* Colonne droite : Liste détaillée des risques */}
-        <div className="lg:col-span-2 bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-              Plan de Mitigation des Risques
+        <div className="lg:col-span-2 panel space-y-4 border border-[var(--border)] bg-[var(--surface)] p-5 rounded-[var(--r-md)]">
+          <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
+            <h3 className="panel-title mb-0 flex items-center gap-2 text-xs font-bold text-[var(--text)] uppercase tracking-wider">
+              <ShieldAlert className="w-4 h-4 text-[var(--brand)]" />
+              PLAN DE MITIGATION DES RISQUES
             </h3>
           </div>
 
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="space-y-3">
             {projectRisks.length === 0 ? (
-              <div className="py-12 text-center text-slate-400 text-xs">
-                Aucun risque déclaré pour ce périmètre.
+              <div className="empty py-12 flex flex-col items-center justify-center text-center">
+                <ShieldCheck className="w-8 h-8 text-[var(--text-muted)] mb-2" />
+                <p className="text-sm font-bold text-[var(--text)] uppercase tracking-wider">AUCUN RISQUE DÉCLARÉ</p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">Tous les périmètres sont sous contrôle ou aucun risque filtré.</p>
               </div>
             ) : (
               projectRisks.map(r => {
-                const owner = users.find(u => u.id === r.ownerId);
-                const severityBadges: Record<RiskSeverity, string> = {
-                  critical: 'bg-red-100 text-[#FF1E27] font-black',
-                  high: 'bg-amber-100 text-amber-800 font-bold',
-                  medium: 'bg-yellow-100 text-yellow-800 font-semibold',
-                  low: 'bg-emerald-100 text-emerald-800',
-                };
-
                 return (
-                  <div key={r.id} className="p-4 space-y-2 hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition">
+                  <div key={r.id} className="card-inner space-y-2.5 p-4 rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--surface-2)]">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className={`px-2 py-0.5 rounded text-[10px] uppercase tracking-wider ${severityBadges[r.severity]}`}>
-                            {r.severity}
-                          </span>
-                          <span className="text-xs font-semibold text-slate-500">
+                          <Badge variant={getSeverityBadgeVariant(r.severity)} size="sm">
+                            {r.severity.toUpperCase()}
+                          </Badge>
+                          <span className="text-[11px] font-mono text-[var(--text-muted)]">
                             P: {r.probability}/5 • I: {r.impact}/5
                           </span>
                         </div>
-                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mt-1">
+                        <h4 className="text-xs font-bold text-[var(--text)] uppercase tracking-wide mt-1.5">
                           {r.title}
                         </h4>
                       </div>
@@ -246,31 +264,32 @@ export function RisksView() {
                         <select
                           value={r.status}
                           onChange={(e) => updateRiskStatus(r.id, e.target.value as ProjectRisk['status'])}
-                          className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border-0"
+                          className="form-select py-1 px-2.5 text-xs w-auto uppercase font-bold rounded-[var(--r-xs)] border border-[var(--border)] bg-[var(--surface)] text-[var(--text)]"
                         >
-                          <option value="identified">Identifié</option>
-                          <option value="mitigating">En mitigation</option>
-                          <option value="materialized">Matérialisé</option>
-                          <option value="closed">Clôturé / Neutre</option>
+                          <option value="identified">IDENTIFIÉ</option>
+                          <option value="mitigating">EN MITIGATION</option>
+                          <option value="materialized">MATÉRIALISÉ</option>
+                          <option value="closed">CLÔTURÉ / NEUTRE</option>
                         </select>
 
                         <button
+                          type="button"
                           onClick={() => deleteRisk(r.id)}
-                          className="p-1.5 text-slate-400 hover:text-[#FF1E27] rounded-lg transition"
+                          className="p-1.5 rounded text-[var(--text-muted)] hover:text-[var(--button-danger-bg)] transition-colors"
                           title="Supprimer le risque"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
 
-                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                    <p className="text-xs text-[var(--text-muted)] leading-relaxed">
                       {r.description}
                     </p>
 
                     {r.mitigationPlan && (
-                      <div className="p-2.5 rounded-xl bg-blue-50/50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 text-xs text-blue-900 dark:text-blue-300">
-                        🛡️ <strong>Plan de mitigation :</strong> {r.mitigationPlan}
+                      <div className="p-2.5 rounded-[var(--r-xs)] bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--text)]">
+                        <strong className="text-[var(--brand)] uppercase mr-1">Plan de mitigation :</strong> {r.mitigationPlan}
                       </div>
                     )}
                   </div>
@@ -281,109 +300,84 @@ export function RisksView() {
         </div>
       </div>
 
-      {/* Modale d'ajout de risque */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-[#0F172A] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-md w-full p-6 animate-in fade-in zoom-in-95">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4">
-              Identifier un nouveau risque
-            </h3>
-            <form onSubmit={handleCreateRisk} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                  Intitulé du risque
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={riskTitle}
-                  onChange={(e) => setRiskTitle(e.target.value)}
-                  placeholder="Ex : Retard d'approbation réglementaire"
-                  className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                  Description du scénario
-                </label>
-                <textarea
-                  rows={2}
-                  value={riskDesc}
-                  onChange={(e) => setRiskDesc(e.target.value)}
-                  placeholder="Détails du risque..."
-                  className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                    Probabilité (1 à 5)
-                  </label>
-                  <select
-                    value={riskProb}
-                    onChange={(e) => setRiskProb(parseInt(e.target.value))}
-                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                  >
-                    <option value={1}>1 — Très rare</option>
-                    <option value={2}>2 — Faible</option>
-                    <option value={3}>3 — Moyenne</option>
-                    <option value={4}>4 — Élevée</option>
-                    <option value={5}>5 — Presque certaine</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                    Impact (1 à 5)
-                  </label>
-                  <select
-                    value={riskImpact}
-                    onChange={(e) => setRiskImpact(parseInt(e.target.value))}
-                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                  >
-                    <option value={1}>1 — Négligeable</option>
-                    <option value={2}>2 — Mineur</option>
-                    <option value={3}>3 — Modéré</option>
-                    <option value={4}>4 — Majeur</option>
-                    <option value={5}>5 — Critique</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                  Plan d'atténuation / mitigation
-                </label>
-                <textarea
-                  rows={2}
-                  value={riskMitigation}
-                  onChange={(e) => setRiskMitigation(e.target.value)}
-                  placeholder="Que fait-on pour réduire ou éliminer ce risque ?"
-                  className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-xs font-bold text-white bg-[#0066FF] hover:bg-blue-600 rounded-xl shadow-md"
-                >
-                  Enregistrer le risque
-                </button>
-              </div>
-            </form>
+      {/* Modale d'ajout de risque conforme Phase 4 */}
+      <Modal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        title="IDENTIFIER UN RISQUE"
+        subtitle="Évaluez la criticité et formulez un plan d'action préventif"
+        icon={<ShieldAlert className="w-4 h-4 text-[var(--brand)]" />}
+        footer={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowAddModal(false)}
+            >
+              ANNULER
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => handleCreateRisk()}
+            >
+              ENREGISTRER LE RISQUE
+            </Button>
           </div>
-        </div>
-      )}
+        }
+      >
+        <form onSubmit={handleCreateRisk} className="space-y-4">
+          <Input
+            label="Intitulé du risque"
+            required
+            value={riskTitle}
+            onChange={(e) => setRiskTitle(e.target.value)}
+            placeholder="Ex : Retard d'approbation réglementaire"
+          />
+
+          <Textarea
+            label="Description du scénario"
+            rows={2}
+            value={riskDesc}
+            onChange={(e) => setRiskDesc(e.target.value)}
+            placeholder="Détails du risque..."
+          />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Select
+              label="Probabilité (1 à 5)"
+              value={riskProb}
+              onChange={(e) => setRiskProb(parseInt(e.target.value))}
+            >
+              <option value={1}>1 — TRÈS RARE</option>
+              <option value={2}>2 — FAIBLE</option>
+              <option value={3}>3 — MOYENNE</option>
+              <option value={4}>4 — ÉLEVÉE</option>
+              <option value={5}>5 — PRESQUE CERTAINE</option>
+            </Select>
+
+            <Select
+              label="Impact (1 à 5)"
+              value={riskImpact}
+              onChange={(e) => setRiskImpact(parseInt(e.target.value))}
+            >
+              <option value={1}>1 — NÉGLIGEABLE</option>
+              <option value={2}>2 — MINEUR</option>
+              <option value={3}>3 — MODÉRÉ</option>
+              <option value={4}>4 — MAJEUR</option>
+              <option value={5}>5 — CRITIQUE</option>
+            </Select>
+          </div>
+
+          <Textarea
+            label="Plan d'atténuation / mitigation"
+            rows={2}
+            value={riskMitigation}
+            onChange={(e) => setRiskMitigation(e.target.value)}
+            placeholder="Que fait-on pour réduire ou éliminer ce risque ?"
+          />
+        </form>
+      </Modal>
     </div>
   );
 }

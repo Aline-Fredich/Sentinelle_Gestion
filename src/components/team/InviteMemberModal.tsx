@@ -45,126 +45,133 @@ export function InviteMemberModal({ isOpen, onClose }: InviteMemberModalProps) {
   const isQuotaFull = quotas.members.used >= quotas.members.max;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-md w-full border border-[#E4E7EC] dark:border-slate-800 shadow-2xl space-y-5">
-        <div className="flex items-center justify-between pb-3 border-b border-[#E4E7EC] dark:border-slate-800">
+    <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true">
+      <div 
+        className="modal modal--sm"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between pb-3 border-b border-[#242424] mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-rose-50 text-[#C83B42] dark:bg-rose-950/40">
-              <UserPlus className="w-5 h-5" />
+            <div className="w-8 h-8 rounded-[4px] border border-red bg-red/10 flex items-center justify-center text-red">
+              <UserPlus className="w-4 h-4 text-red" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-[#202733] dark:text-white">
-                Inviter un collaborateur
+              <h2 className="modal-title mb-0">
+                INVITER UN COLLABORATEUR
               </h2>
-              <p className="text-xs text-[#667085]">
-                Générez un accès sécurisé dans SENTINEL GESTION
+              <p className="text-micro text-white/45">
+                Générez un accès sécurisé dans SENTINELLE DE GESTION
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition">
-            <X className="w-5 h-5" />
+          <button 
+            onClick={onClose} 
+            className="btn btn-ghost btn-sm p-1"
+            aria-label="Fermer"
+          >
+            <X className="w-4 h-4 text-white/70" />
           </button>
         </div>
 
         {/* Quota indication */}
-        <div className="p-3 rounded-xl bg-[#F6F7F9] dark:bg-slate-800/60 border border-[#E4E7EC] dark:border-slate-700 text-xs flex items-center justify-between">
-          <span className="text-[#667085]">Quota d’équipe :</span>
-          <span className="font-bold text-[#202733] dark:text-white">
-            {quotas.members.used} / {quotas.members.max} membres utilisés
+        <div className="card-inner text-xs flex items-center justify-between mb-3">
+          <span className="text-white/45 uppercase tracking-wider font-bold text-micro">Quota d’équipe :</span>
+          <span className="tag-mono text-white">
+            {quotas.members.used} / {quotas.members.max} MEMBRES
           </span>
         </div>
 
         {isQuotaFull && (
-          <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900 text-xs text-[#C83B42] flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>Limite de collaborateurs atteinte. Passez à l’offre Pro pour inviter plus de membres.</span>
+          <div className="alert alert--error mb-3 text-xs">
+            <AlertCircle className="w-4 h-4 text-red inline mr-1" />
+            <span>Limite de collaborateurs atteinte. Passez à l’offre supérieure pour inviter plus de membres.</span>
           </div>
         )}
 
         {error && (
-          <div className="p-3 rounded-xl bg-rose-50 text-xs text-[#C83B42] flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <div className="alert alert--error mb-3 text-xs">
+            <AlertCircle className="w-4 h-4 text-red inline mr-1" />
             <span>{error}</span>
           </div>
         )}
 
         {success ? (
-          <div className="py-6 flex flex-col items-center justify-center text-center space-y-2 text-[#23845B]">
-            <CheckCircle2 className="w-10 h-10 animate-bounce" />
-            <h4 className="text-sm font-bold">Invitation envoyée avec succès !</h4>
-            <p className="text-xs text-[#667085]">Un lien d’accès sécurisé a été généré.</p>
+          <div className="py-6 flex flex-col items-center justify-center text-center space-y-2 text-white">
+            <CheckCircle2 className="w-8 h-8 text-white" />
+            <h4 className="text-sm font-bold uppercase tracking-wider">Invitation envoyée avec succès !</h4>
+            <p className="text-micro text-white/45">Un lien d’accès sécurisé a été généré.</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-[#202733] dark:text-slate-300 mb-1">
-                Adresse email professionnelle *
+            <div className="form-group mb-0">
+              <label className="form-label">
+                Adresse email professionnelle <span className="req">*</span>
               </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <div className="input-group">
+                <Mail className="w-4 h-4 text-red" />
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="collaborateur@entreprise.fr"
-                  className="w-full pl-9 pr-3 py-2 text-xs bg-[#F6F7F9] dark:bg-slate-800 border border-[#E4E7EC] dark:border-slate-700 rounded-xl text-[#202733] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#C83B42]"
+                  placeholder="collaborateur@entreprise.cg"
+                  className="form-input font-mono"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-[#202733] dark:text-slate-300 mb-1">
+            <div className="form-row">
+              <div className="form-group mb-0">
+                <label className="form-label">
                   Rôle attribué
                 </label>
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value as WorkspaceRole)}
-                  className="w-full px-2.5 py-2 text-xs bg-[#F6F7F9] dark:bg-slate-800 border border-[#E4E7EC] dark:border-slate-700 rounded-xl text-[#202733] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#C83B42]"
+                  className="form-select uppercase font-bold"
                 >
-                  <option value="member">Membre (standard)</option>
-                  <option value="project_manager">Chef de projet</option>
-                  <option value="admin">Administrateur</option>
-                  <option value="viewer">Lecteur seul</option>
+                  <option value="member">MEMBRE (STANDARD)</option>
+                  <option value="project_manager">CHEF DE PROJET</option>
+                  <option value="admin">ADMINISTRATEUR</option>
+                  <option value="viewer">LECTEUR SEUL</option>
                 </select>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-[#202733] dark:text-slate-300 mb-1">
+              <div className="form-group mb-0">
+                <label className="form-label">
                   Périmètre projet
                 </label>
                 <select
                   value={projectId}
                   onChange={(e) => setProjectId(e.target.value)}
-                  className="w-full px-2.5 py-2 text-xs bg-[#F6F7F9] dark:bg-slate-800 border border-[#E4E7EC] dark:border-slate-700 rounded-xl text-[#202733] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#C83B42]"
+                  className="form-select uppercase font-bold"
                 >
-                  <option value="all">Tout l’espace</option>
+                  <option value="all">TOUT L'ESPACE</option>
                   {projects.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
+                    <option key={p.id} value={p.id}>{p.name.toUpperCase()}</option>
                   ))}
                 </select>
               </div>
             </div>
 
-            <p className="text-[11px] text-[#667085] leading-relaxed">
+            <p className="text-micro text-white/45 leading-relaxed">
               L’invitation génère un lien d’embarquement révocable à tout moment, valable 7 jours.
             </p>
 
-            <div className="pt-2 flex items-center justify-end gap-2.5">
+            <div className="modal-actions pt-2 border-t border-[#242424]">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-3.5 py-2 text-xs font-medium text-[#667085] hover:bg-[#F6F7F9] dark:hover:bg-slate-800 rounded-xl transition"
+                className="btn btn-secondary btn-sm"
               >
-                Annuler
+                ANNULER
               </button>
               <button
                 type="submit"
                 disabled={isQuotaFull}
-                className="px-4 py-2 text-xs font-semibold text-white bg-[#C83B42] hover:bg-[#b03037] active:bg-[#99252c] rounded-xl transition shadow-sm disabled:opacity-50"
+                className="btn btn-primary btn-sm"
               >
-                Envoyer l’invitation
+                ENVOYER L'INVITATION
               </button>
             </div>
           </form>

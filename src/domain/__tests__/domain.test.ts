@@ -1,6 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { wouldCreateDependencyCycle, isTaskBlockedByDependencies } from '../dependencies.ts';
+import { 
+  wouldCreateDependencyCycle, 
+  isTaskBlockedByDependencies,
+  calculateCriticalPathMethod,
+} from '../dependencies.ts';
 import { calculateProjectFinances } from '../finances.ts';
 import { calculateSprintBurndown } from '../burndown.ts';
 import { calculateTeamWorkload } from '../workload.ts';
@@ -58,6 +62,32 @@ describe('SENTINEL GESTION — Domaine Métier Pur', () => {
       const checkUnblocked = isTaskBlockedByDependencies('tsk-2', deps, tasks);
       assert.equal(checkUnblocked.isBlocked, false, 'T2 devrait être débloquée');
       assert.equal(checkUnblocked.blockingTaskIds.length, 0);
+    });
+
+    it('calcule la méthode du chemin critique (CPM) avec marges libres et totales', () => {
+      // Chaîne A (3 jours) -> B (4 jours) = 7 jours (Chemin Critique)
+      // Tâche C (2 jours) en parallèle -> B
+      const tasks: Task[] = [
+        { id: 'A', workspaceId: 'ws-1', projectId: 'p1', title: 'Tâche A', description: '', status: 'todo', priority: 'high', estimateMinutes: 180, startDate: '2026-11-01', dueDate: '2026-11-03', labels: [], order: 0, createdAt: '', updatedAt: '', checklist: [], attachments: [], customFieldValues: {} },
+        { id: 'B', workspaceId: 'ws-1', projectId: 'p1', title: 'Tâche B', description: '', status: 'todo', priority: 'medium', estimateMinutes: 240, startDate: '2026-11-04', dueDate: '2026-11-07', labels: [], order: 1, createdAt: '', updatedAt: '', checklist: [], attachments: [], customFieldValues: {} },
+        { id: 'C', workspaceId: 'ws-1', projectId: 'p1', title: 'Tâche C', description: '', status: 'todo', priority: 'low', estimateMinutes: 120, startDate: '2026-11-01', dueDate: '2026-11-02', labels: [], order: 2, createdAt: '', updatedAt: '', checklist: [], attachments: [], customFieldValues: {} },
+      ];
+
+      const deps: TaskDependency[] = [
+        { id: 'dep-1', projectId: 'p1', predecessorTaskId: 'A', successorTaskId: 'B', dependencyType: 'finish_to_start', createdAt: '' },
+        { id: 'dep-2', projectId: 'p1', predecessorTaskId: 'C', successorTaskId: 'B', dependencyType: 'finish_to_start', createdAt: '' },
+      ];
+
+      const cpm = calculateCriticalPathMethod(tasks, deps);
+      assert.equal(cpm.projectDurationDays, 7);
+      assert.ok(cpm.criticalTaskIds.includes('A'));
+      assert.ok(cpm.criticalTaskIds.includes('B'));
+      assert.equal(cpm.criticalTaskIds.includes('C'), false, 'C a de la marge et ne doit pas être critique');
+
+      const schedA = cpm.schedules.get('A');
+      const schedC = cpm.schedules.get('C');
+      assert.equal(schedA?.totalFloat, 0);
+      assert.ok((schedC?.totalFloat || 0) > 0, 'C doit avoir une marge positive');
     });
   });
 

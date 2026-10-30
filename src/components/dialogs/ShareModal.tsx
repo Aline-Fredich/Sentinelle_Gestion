@@ -40,92 +40,96 @@ export function ShareModal({ isOpen, onClose }: ShareModalProps) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="share-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in"
+      className="modal-overlay"
+      onClick={onClose}
     >
-      <div className="bg-white dark:bg-[#0F172A] rounded-2xl p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-5">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+      <div 
+        className="modal max-w-md w-full"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between pb-3 border-b border-[var(--line)] mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-[#0066FF]">
-              <Share2 className="w-4 h-4" />
-            </div>
+            <Share2 className="w-5 h-5 text-[var(--red)]" />
             <div>
-              <h3 id="share-modal-title" className="text-sm font-bold text-slate-900 dark:text-white">
-                Partager le projet
+              <h3 id="share-modal-title" className="modal-title mb-0">
+                PARTAGER LE PROJET
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-[var(--white-70)] font-mono">
                 {currentProject?.name}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            className="btn btn-ghost btn-icon btn-sm"
             aria-label="Fermer la modale"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Formulaire d'invitation sécurisée */}
         <form onSubmit={handleAddShare} className="space-y-3">
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+          <label className="form-label">
             Inviter un collaborateur externe ou auditeur
           </label>
           <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <div className="input-group flex-1">
+              <Mail className="w-4 h-4 text-[var(--red)]" />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="auditeur@cabinet-partenaire.fr"
-                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+                placeholder="auditeur@cabinet-partenaire.com"
+                className="form-input"
               />
             </div>
             <select
               value={permission}
               onChange={(e) => setPermission(e.target.value as 'view' | 'edit')}
-              className="px-2.5 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+              className="form-select w-auto font-mono text-xs"
             >
-              <option value="view">Lecture seule</option>
-              <option value="edit">Modification</option>
+              <option value="view">LECTURE SEULE</option>
+              <option value="edit">MODIFICATION</option>
             </select>
           </div>
           <button
             type="submit"
-            className="w-full py-2 text-xs font-bold text-white bg-[#0066FF] hover:bg-blue-600 rounded-xl transition shadow-md shadow-blue-500/20"
+            className="btn btn-primary w-full"
           >
-            Accorder l’accès sécurisé
+            <span>ACCORDER L’ACCÈS</span>
           </button>
         </form>
 
         {/* Liste des partages persistés avec révocation */}
-        <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 block">
+        <div className="space-y-2 pt-3 border-t border-[var(--line)] mt-4">
+          <span className="text-xs font-bold uppercase tracking-wider text-[var(--white-70)] block">
             Accès actifs ({projectShares.length})
           </span>
           {projectShares.length === 0 ? (
-            <p className="text-xs text-slate-400 py-2 text-center">Aucun accès externe actif pour ce projet</p>
+            <p className="text-xs text-[var(--white-45)] py-3 text-center border border-[var(--line)] rounded-[var(--r-xs)]">
+              Aucun accès externe actif pour ce projet
+            </p>
           ) : (
-            <div className="space-y-1.5 max-h-40 overflow-y-auto">
+            <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
               {projectShares.map(s => (
-                <div key={s.id} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 text-xs">
+                <div key={s.id} className="flex items-center justify-between p-2.5 rounded-[var(--r-xs)] bg-black border border-[var(--line)] text-xs">
                   <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF]" />
+                    <ShieldCheck className="w-4 h-4 text-[var(--red)] flex-none" />
                     <div>
-                      <span className="font-semibold text-slate-800 dark:text-slate-200 block truncate max-w-[200px]">
+                      <span className="font-bold text-white block truncate max-w-[200px]">
                         {s.sharedWithEmail}
                       </span>
-                      <span className="text-[11px] text-slate-400">
-                        {s.permission === 'edit' ? 'Droit d’édition' : 'Consultation seule'}
+                      <span className="text-[11px] text-[var(--white-45)] font-mono">
+                        {s.permission === 'edit' ? 'DROIT D’ÉDITION' : 'CONSULTATION SEULE'}
                       </span>
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={() => revokeProjectShare(s.id)}
-                    className="text-[#FF1E27] hover:text-red-700 p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 transition"
+                    className="btn btn-ghost btn-icon btn-sm text-[var(--red)] hover:bg-[var(--red-tint)]"
                     title="Révoquer l’accès"
                     aria-label={`Révoquer l’accès pour ${s.sharedWithEmail}`}
                   >
@@ -138,14 +142,14 @@ export function ShareModal({ isOpen, onClose }: ShareModalProps) {
         </div>
 
         {/* Copier le lien sécurisé */}
-        <div className="pt-2">
+        <div className="pt-3 border-t border-[var(--line)] mt-4">
           <button
             type="button"
             onClick={handleCopyLink}
-            className="flex items-center justify-center gap-2 w-full py-2 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition"
+            className="btn btn-secondary w-full"
           >
-            {copiedLink ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-            <span>{copiedLink ? 'Lien copié dans le presse-papier !' : 'Copier le lien sécurisé du projet'}</span>
+            {copiedLink ? <Check className="w-4 h-4 text-white" /> : <Copy className="w-4 h-4 text-[var(--red)]" />}
+            <span>{copiedLink ? 'LIEN COPIÉ !' : 'COPIER LE LIEN DU PROJET'}</span>
           </button>
         </div>
       </div>

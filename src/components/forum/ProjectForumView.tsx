@@ -3,19 +3,17 @@
 import React, { useState } from 'react';
 import { 
   MessageSquare, Plus, Pin, CheckCircle2, MessageCircle, 
-  Send, ThumbsUp, Rocket, Eye, Search, Filter, Trash2, ArrowLeft,
-  Calendar, User
+  Send, ThumbsUp, Rocket, Search, Trash2, ArrowLeft
 } from 'lucide-react';
 import { useSentinel } from '@/lib/store';
-import { ForumCategory, ForumTopic, ForumPost } from '@/types/sentinel';
+import { ForumCategory } from '@/types/sentinel';
 import { formatRelativeTimeFrench } from '@/lib/dateUtils';
 
 export function ProjectForumView() {
   const { 
-    currentProject, projects, activeProjectId, setActiveProjectId,
+    projects, activeProjectId, setActiveProjectId,
     forumTopics, forumPosts, createForumTopic, createForumPost,
-    toggleTopicPin, markPostAsSolution, addReactionToPost, deleteForumTopic,
-    currentUser
+    toggleTopicPin, markPostAsSolution, addReactionToPost, deleteForumTopic
   } = useSentinel();
 
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
@@ -48,11 +46,11 @@ export function ProjectForumView() {
   const selectedTopic = forumTopics.find(t => t.id === selectedTopicId);
   const selectedPosts = forumPosts.filter(p => p.topicId === selectedTopicId);
 
-  const categoryLabels: Record<ForumCategory, { label: string; badge: string }> = {
-    general: { label: 'Discussions générales', badge: 'bg-slate-100 text-[#667085] dark:bg-slate-800' },
-    qa: { label: 'Questions & Réponses', badge: 'bg-blue-50 text-[#3478C8] dark:bg-blue-950/40' },
-    decisions: { label: 'Décisions du projet', badge: 'bg-emerald-50 text-[#23845B] dark:bg-emerald-950/40' },
-    announcements: { label: 'Annonces du responsable', badge: 'bg-rose-50 text-[#C83B42] dark:bg-rose-950/40' },
+  const categoryLabels: Record<ForumCategory, { label: string }> = {
+    general: { label: 'Discussions générales' },
+    qa: { label: 'Questions & Réponses' },
+    decisions: { label: 'Décisions du projet' },
+    announcements: { label: 'Annonces du responsable' },
   };
 
   const handleCreateTopic = (e: React.FormEvent) => {
@@ -80,18 +78,17 @@ export function ProjectForumView() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="stack animate-in fade-in duration-200">
       {/* En-tête du Forum */}
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-[#E4E7EC] dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="panel flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-[#C83B42] dark:text-rose-400 mb-1 uppercase tracking-wider">
-            <MessageSquare className="w-3.5 h-3.5" />
-            Collaboration par projet
+          <div className="panel-title text-xs">
+            FORUM DE COLLABORATION PAR PROJET
           </div>
-          <h1 className="text-xl font-bold text-[#202733] dark:text-white">
-            Forum & Discussions : {activePrj?.name || 'Projet'}
+          <h1 className="text-xl font-bold text-white uppercase tracking-tight">
+            ÉCHANGES & DÉCISIONS : {activePrj?.name || 'Projet'}
           </h1>
-          <p className="text-xs text-[#667085] dark:text-slate-400 mt-1">
+          <p className="text-xs text-[var(--white-70)] mt-1">
             Échangez avec l’équipe, posez des questions techniques et actez les décisions officielles du projet.
           </p>
         </div>
@@ -103,7 +100,7 @@ export function ProjectForumView() {
               setActiveProjectId(e.target.value);
               setSelectedTopicId(null);
             }}
-            className="text-xs px-3 py-2 bg-[#F6F7F9] dark:bg-slate-800 border border-[#E4E7EC] dark:border-slate-700 rounded-xl font-medium text-[#202733] dark:text-white"
+            className="form-select font-mono text-xs w-auto min-h-[38px]"
           >
             {projects.map(p => (
               <option key={p.id} value={p.id}>{p.name}</option>
@@ -112,59 +109,60 @@ export function ProjectForumView() {
 
           <button
             onClick={() => setIsNewTopicOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#C83B42] hover:bg-[#b03037] active:bg-[#99252c] rounded-xl shadow-sm transition"
+            className="btn btn-primary"
           >
             <Plus className="w-4 h-4" />
-            <span>Nouveau sujet</span>
+            <span>NOUVEAU SUJET</span>
           </button>
         </div>
       </div>
 
       {/* Si un sujet est ouvert : Vue Fil de discussion */}
       {selectedTopic ? (
-        <div className="space-y-4">
+        <div className="stack">
           <button
             onClick={() => setSelectedTopicId(null)}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#667085] hover:text-[#202733] dark:hover:text-white transition"
+            className="btn btn-ghost btn-sm self-start"
           >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Retour à la liste des discussions</span>
+            <ArrowLeft className="w-4 h-4 text-[var(--red)]" />
+            <span>RETOUR AUX DISCUSSIONS</span>
           </button>
 
           {/* Sujet initial */}
-          <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-[#E4E7EC] dark:border-slate-800 shadow-sm space-y-4">
+          <div className="panel space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={selectedTopic.authorAvatar} alt={selectedTopic.authorName} className="w-10 h-10 rounded-full object-cover" />
+                <img src={selectedTopic.authorAvatar} alt={selectedTopic.authorName} className="w-10 h-10 rounded-[var(--r-xs)] border border-[var(--red-soft)] object-cover" />
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-[#202733] dark:text-white">
+                    <span className="text-sm font-bold text-white uppercase tracking-wider">
                       {selectedTopic.title}
                     </span>
                     {selectedTopic.isPinned && (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-[#D69A24] flex items-center gap-1">
-                        <Pin className="w-3 h-3" /> Épinglé
+                      <span className="badge badge--bad text-[10px]">
+                        <Pin className="w-3 h-3 text-[var(--red)] mr-1 inline" /> ÉPINGLÉ
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-[#667085] mt-0.5">
-                    <span>Par {selectedTopic.authorName}</span>
+                  <div className="flex items-center gap-2 text-xs text-[var(--white-45)] mt-1 font-mono">
+                    <span className="text-white font-semibold">Par {selectedTopic.authorName}</span>
                     <span>•</span>
                     <span>{formatRelativeTimeFrench(selectedTopic.createdAt)}</span>
                     <span>•</span>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${categoryLabels[selectedTopic.category].badge}`}>
+                    <span className="badge text-[10px] uppercase">
                       {categoryLabels[selectedTopic.category].label}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <button
                   onClick={() => toggleTopicPin(selectedTopic.id)}
-                  className="p-1.5 text-slate-400 hover:text-amber-500 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                  className="btn btn-ghost btn-icon btn-sm"
                   title="Épingler en haut"
+                  aria-label="Épingler le sujet"
                 >
                   <Pin className="w-4 h-4" />
                 </button>
@@ -173,27 +171,28 @@ export function ProjectForumView() {
                     deleteForumTopic(selectedTopic.id);
                     setSelectedTopicId(null);
                   }}
-                  className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                  className="btn btn-ghost btn-icon btn-sm text-[var(--red)] hover:bg-[var(--red-tint)]"
                   title="Supprimer la discussion"
+                  aria-label="Supprimer la discussion"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            <p className="text-xs text-[#202733] dark:text-slate-200 leading-relaxed whitespace-pre-wrap pl-13">
+            <p className="text-xs text-[var(--white-70)] leading-relaxed whitespace-pre-wrap pl-13 card-inner">
               {selectedTopic.body}
             </p>
           </div>
 
           {/* Liste des réponses */}
           <div className="space-y-3">
-            <h3 className="text-xs font-bold text-[#667085] uppercase tracking-wider">
-              Réponses de l’équipe ({selectedPosts.length})
+            <h3 className="panel-title text-xs">
+              RÉPONSES DE L’ÉQUIPE ({selectedPosts.length})
             </h3>
 
             {selectedPosts.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-[#E4E7EC] dark:border-slate-800">
+              <div className="panel p-8 text-center text-xs text-[var(--white-45)]">
                 Soyez le premier à répondre à ce sujet !
               </div>
             ) : (
@@ -204,21 +203,19 @@ export function ProjectForumView() {
                 return (
                   <div
                     key={post.id}
-                    className={`p-5 rounded-2xl border transition ${
-                      post.isSolution
-                        ? 'bg-emerald-50/40 border-emerald-300 dark:border-emerald-800 dark:bg-emerald-950/20'
-                        : 'bg-white dark:bg-slate-900 border-[#E4E7EC] dark:border-slate-800'
+                    className={`panel ${
+                      post.isSolution ? 'border-[var(--red)] bg-[var(--red-tint)] shadow-[var(--glow-sm)]' : ''
                     }`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-2.5">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={post.authorAvatar} alt={post.authorName} className="w-7 h-7 rounded-full object-cover" />
+                        <img src={post.authorAvatar} alt={post.authorName} className="w-7 h-7 rounded-[var(--r-xs)] border border-[var(--line-strong)] object-cover" />
                         <div>
-                          <span className="text-xs font-bold text-[#202733] dark:text-white">
+                          <span className="text-xs font-bold text-white">
                             {post.authorName}
                           </span>
-                          <span className="text-[10px] text-[#667085] ml-2">
+                          <span className="text-[10px] text-[var(--white-45)] ml-2 font-mono">
                             {formatRelativeTimeFrench(post.createdAt)}
                           </span>
                         </div>
@@ -226,22 +223,22 @@ export function ProjectForumView() {
 
                       <div className="flex items-center gap-2">
                         {post.isSolution ? (
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3" /> Solution officielle
+                          <span className="badge badge--ok text-[10px]">
+                            <CheckCircle2 className="w-3 h-3 mr-1 inline" /> SOLUTION OFFICIELLE
                           </span>
                         ) : (
                           <button
                             onClick={() => markPostAsSolution(selectedTopic.id, post.id)}
-                            className="text-[11px] font-medium text-emerald-600 hover:underline flex items-center gap-1"
+                            className="btn btn-ghost btn-sm text-[11px]"
                           >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Marquer comme solution</span>
+                            <CheckCircle2 className="w-3.5 h-3.5 text-[var(--red)]" />
+                            <span>MARQUER COMME SOLUTION</span>
                           </button>
                         )}
                       </div>
                     </div>
 
-                    <p className="text-xs text-[#202733] dark:text-slate-200 mt-2.5 leading-relaxed pl-9 whitespace-pre-wrap">
+                    <p className="text-xs text-[var(--white-70)] mt-2.5 leading-relaxed whitespace-pre-wrap pl-9">
                       {post.body}
                     </p>
 
@@ -249,17 +246,17 @@ export function ProjectForumView() {
                     <div className="flex items-center gap-2 mt-3 pl-9">
                       <button
                         onClick={() => addReactionToPost(post.id, '👍')}
-                        className="px-2 py-1 rounded-lg text-xs bg-[#F6F7F9] dark:bg-slate-800 hover:bg-slate-200 flex items-center gap-1 text-[#667085]"
+                        className="btn btn-secondary btn-sm"
                       >
-                        <ThumbsUp className="w-3 h-3 text-blue-500" />
-                        <span>{thumbsCount > 0 ? thumbsCount : ''}</span>
+                        <ThumbsUp className="w-3 h-3 text-[var(--red)]" />
+                        <span className="font-mono text-xs">{thumbsCount > 0 ? thumbsCount : ''}</span>
                       </button>
                       <button
                         onClick={() => addReactionToPost(post.id, '🚀')}
-                        className="px-2 py-1 rounded-lg text-xs bg-[#F6F7F9] dark:bg-slate-800 hover:bg-slate-200 flex items-center gap-1 text-[#667085]"
+                        className="btn btn-secondary btn-sm"
                       >
-                        <Rocket className="w-3 h-3 text-rose-500" />
-                        <span>{rocketsCount > 0 ? rocketsCount : ''}</span>
+                        <Rocket className="w-3 h-3 text-[var(--red)]" />
+                        <span className="font-mono text-xs">{rocketsCount > 0 ? rocketsCount : ''}</span>
                       </button>
                     </div>
                   </div>
@@ -269,22 +266,22 @@ export function ProjectForumView() {
           </div>
 
           {/* Formulaire de réponse */}
-          <form onSubmit={handleSendReply} className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-[#E4E7EC] dark:border-slate-800 shadow-sm space-y-3">
+          <form onSubmit={handleSendReply} className="panel space-y-3">
             <textarea
               required
               rows={3}
               value={replyText}
               onChange={(e) => setReplyText(e.target.value)}
               placeholder="Écrivez votre réponse ou proposez une solution..."
-              className="w-full p-3 text-xs bg-[#F6F7F9] dark:bg-slate-800 border border-[#E4E7EC] dark:border-slate-700 rounded-xl text-[#202733] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#C83B42]"
+              className="form-textarea"
             />
             <div className="flex justify-end">
               <button
                 type="submit"
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#C83B42] hover:bg-[#b03037] active:bg-[#99252c] rounded-xl transition shadow-sm"
+                className="btn btn-primary"
               >
-                <Send className="w-3.5 h-3.5" />
-                <span>Publier la réponse</span>
+                <Send className="w-4 h-4" />
+                <span>PUBLIER LA RÉPONSE</span>
               </button>
             </div>
           </form>
@@ -294,40 +291,34 @@ export function ProjectForumView() {
         <div className="space-y-4">
           {/* Barre de filtres et recherche */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 text-xs font-medium">
+            <div className="tabs">
               <button
                 onClick={() => setSelectedCategory('all')}
-                className={`px-3 py-1.5 rounded-xl transition ${
-                  selectedCategory === 'all'
-                    ? 'bg-[#202733] text-white dark:bg-slate-800'
-                    : 'bg-white dark:bg-slate-900 text-[#667085] border border-[#E4E7EC] dark:border-slate-800'
-                }`}
+                className="tab"
+                aria-selected={selectedCategory === 'all'}
               >
-                Toutes
+                TOUTES
               </button>
               {(Object.keys(categoryLabels) as ForumCategory[]).map(cat => (
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1.5 rounded-xl transition whitespace-nowrap ${
-                    selectedCategory === cat
-                      ? 'bg-[#202733] text-white dark:bg-slate-800'
-                      : 'bg-white dark:bg-slate-900 text-[#667085] border border-[#E4E7EC] dark:border-slate-800'
-                  }`}
+                  className="tab"
+                  aria-selected={selectedCategory === cat}
                 >
-                  {categoryLabels[cat].label}
+                  {categoryLabels[cat].label.toUpperCase()}
                 </button>
               ))}
             </div>
 
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <div className="input-group w-full sm:w-64">
+              <Search className="w-4 h-4 text-[var(--red)]" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Rechercher un sujet..."
-                className="w-full pl-9 pr-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-[#E4E7EC] dark:border-slate-800 rounded-xl text-[#202733] dark:text-white"
+                className="form-input text-xs"
               />
             </div>
           </div>
@@ -335,56 +326,69 @@ export function ProjectForumView() {
           {/* Grille des discussions */}
           <div className="space-y-3">
             {projectTopics.length === 0 ? (
-              <div className="p-12 text-center text-xs text-[#667085] bg-white dark:bg-slate-900 rounded-2xl border border-[#E4E7EC] dark:border-slate-800">
-                Aucune discussion pour ce projet. Cliquez sur « Nouveau sujet » pour lancer le premier échange !
+              <div className="empty panel">
+                <MessageSquare className="w-8 h-8 text-[var(--red)]" />
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                  AUCUNE DISCUSSION POUR CE PROJET
+                </h3>
+                <p className="text-xs text-[var(--white-70)]">
+                  Cliquez sur « NOUVEAU SUJET » pour lancer le premier échange entre collaborateurs !
+                </p>
+                <button
+                  onClick={() => setIsNewTopicOpen(true)}
+                  className="btn btn-primary btn-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>CRÉER LE PREMIER SUJET</span>
+                </button>
               </div>
             ) : (
               projectTopics.map(topic => (
                 <div
                   key={topic.id}
                   onClick={() => setSelectedTopicId(topic.id)}
-                  className={`p-4 rounded-2xl bg-white dark:bg-slate-900 border transition cursor-pointer hover:border-slate-400 shadow-sm flex items-start justify-between gap-4 ${
-                    topic.isPinned ? 'border-amber-300 dark:border-amber-900/60' : 'border-[#E4E7EC] dark:border-slate-800'
+                  className={`panel panel--interactive flex items-start justify-between gap-4 ${
+                    topic.isPinned ? 'border-[var(--red-soft)] bg-[var(--red-tint)]' : ''
                   }`}
                 >
                   <div className="flex items-start gap-3.5 min-w-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={topic.authorAvatar} alt={topic.authorName} className="w-9 h-9 rounded-full object-cover mt-0.5" />
+                    <img src={topic.authorAvatar} alt={topic.authorName} className="w-9 h-9 rounded-[var(--r-xs)] border border-[var(--line-strong)] object-cover mt-0.5" />
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-bold text-[#202733] dark:text-white truncate">
+                        <h3 className="text-sm font-bold text-white uppercase tracking-wider truncate">
                           {topic.title}
                         </h3>
                         {topic.isPinned && (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-[#D69A24] flex items-center gap-0.5">
-                            <Pin className="w-3 h-3" /> Épinglé
+                          <span className="badge badge--bad text-[9px]">
+                            <Pin className="w-3 h-3 text-[var(--red)] mr-1 inline" /> ÉPINGLÉ
                           </span>
                         )}
                         {topic.solutionPostId && (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-[#23845B] flex items-center gap-0.5">
-                            <CheckCircle2 className="w-3 h-3" /> Résolu
+                          <span className="badge badge--ok text-[9px]">
+                            <CheckCircle2 className="w-3 h-3 mr-1 inline" /> RÉSOLU
                           </span>
                         )}
                       </div>
 
-                      <p className="text-xs text-[#667085] dark:text-slate-400 line-clamp-1 mt-1">
+                      <p className="text-xs text-[var(--white-70)] line-clamp-1 mt-1">
                         {topic.body}
                       </p>
 
-                      <div className="flex items-center gap-3 text-[11px] text-[#667085] mt-2">
-                        <span>{topic.authorName}</span>
+                      <div className="flex items-center gap-3 text-[11px] text-[var(--white-45)] mt-2 font-mono">
+                        <span className="text-white font-semibold">Par {topic.authorName}</span>
                         <span>•</span>
                         <span>{formatRelativeTimeFrench(topic.createdAt)}</span>
                         <span>•</span>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${categoryLabels[topic.category].badge}`}>
+                        <span className="badge text-[9px] uppercase">
                           {categoryLabels[topic.category].label}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-[#667085] flex-shrink-0 pt-1">
-                    <MessageCircle className="w-4 h-4 text-slate-400" />
+                  <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-[var(--white-70)] flex-none pt-1">
+                    <MessageCircle className="w-4 h-4 text-[var(--red)]" />
                     <span>{topic.replyCount}</span>
                   </div>
                 </div>
@@ -396,21 +400,30 @@ export function ProjectForumView() {
 
       {/* Modale Nouveau Sujet */}
       {isNewTopicOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-lg w-full border border-[#E4E7EC] dark:border-slate-800 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-[#E4E7EC] dark:border-slate-800">
-              <h2 className="text-sm font-bold text-[#202733] dark:text-white">
-                Ouvrir une nouvelle discussion
+        <div className="modal-overlay" onClick={() => setIsNewTopicOpen(false)}>
+          <div 
+            className="modal max-w-lg w-full"
+            onClick={e => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--line)] mb-4">
+              <h2 className="modal-title mb-0">
+                OUVRIR UNE NOUVELLE DISCUSSION
               </h2>
-              <button onClick={() => setIsNewTopicOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <button 
+                onClick={() => setIsNewTopicOpen(false)} 
+                className="btn btn-ghost btn-icon btn-sm"
+                aria-label="Fermer la modale"
+              >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleCreateTopic} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-[#202733] dark:text-slate-300 mb-1">
-                  Titre du sujet *
+            <form onSubmit={handleCreateTopic} className="space-y-4">
+              <div className="form-group mb-0">
+                <label className="form-label">
+                  Titre du sujet <span className="req">*</span>
                 </label>
                 <input
                   type="text"
@@ -418,29 +431,29 @@ export function ProjectForumView() {
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="Ex : Choix technique sur le composant d’export PDF..."
-                  className="w-full px-3 py-2 bg-[#F6F7F9] dark:bg-slate-800 border border-[#E4E7EC] dark:border-slate-700 rounded-xl text-[#202733] dark:text-white"
+                  className="form-input"
                 />
               </div>
 
-              <div>
-                <label className="block font-semibold text-[#202733] dark:text-slate-300 mb-1">
+              <div className="form-group mb-0">
+                <label className="form-label">
                   Catégorie
                 </label>
                 <select
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value as ForumCategory)}
-                  className="w-full px-3 py-2 bg-[#F6F7F9] dark:bg-slate-800 border border-[#E4E7EC] dark:border-slate-700 rounded-xl text-[#202733] dark:text-white"
+                  className="form-select font-mono"
                 >
-                  <option value="general">Discussions générales</option>
-                  <option value="qa">Questions & Réponses</option>
-                  <option value="decisions">Décisions du projet</option>
-                  <option value="announcements">Annonces du responsable</option>
+                  <option value="general">DISCUSSIONS GÉNÉRALES</option>
+                  <option value="qa">QUESTIONS & RÉPONSES</option>
+                  <option value="decisions">DÉCISIONS DU PROJET</option>
+                  <option value="announcements">ANNONCES DU RESPONSABLE</option>
                 </select>
               </div>
 
-              <div>
-                <label className="block font-semibold text-[#202733] dark:text-slate-300 mb-1">
-                  Contenu de la discussion *
+              <div className="form-group mb-0">
+                <label className="form-label">
+                  Contenu de la discussion <span className="req">*</span>
                 </label>
                 <textarea
                   required
@@ -448,23 +461,23 @@ export function ProjectForumView() {
                   value={newBody}
                   onChange={(e) => setNewBody(e.target.value)}
                   placeholder="Détaillez le contexte, la question ou la proposition..."
-                  className="w-full p-3 bg-[#F6F7F9] dark:bg-slate-800 border border-[#E4E7EC] dark:border-slate-700 rounded-xl text-[#202733] dark:text-white"
+                  className="form-textarea"
                 />
               </div>
 
-              <div className="pt-2 flex items-center justify-end gap-2.5">
+              <div className="modal-actions">
                 <button
                   type="button"
                   onClick={() => setIsNewTopicOpen(false)}
-                  className="px-3.5 py-2 text-[#667085] hover:bg-[#F6F7F9] rounded-xl font-medium"
+                  className="btn btn-secondary"
                 >
-                  Annuler
+                  ANNULER
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 font-semibold text-white bg-[#C83B42] hover:bg-[#b03037] active:bg-[#99252c] rounded-xl shadow-sm"
+                  className="btn btn-primary"
                 >
-                  Créer le sujet
+                  CRÉER LE SUJET
                 </button>
               </div>
             </form>

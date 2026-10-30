@@ -7,7 +7,8 @@ import {
 } from 'lucide-react';
 import { useSentinel } from '@/lib/store';
 import { WorkspaceRole, User as UserType } from '@/types/sentinel';
-import { createClient } from '@/lib/supabase/client';
+import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
+import { hashPassword, verifyPassword } from '@/lib/security/crypto';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -59,28 +60,39 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
     const cleanEmail = email.trim().toLowerCase();
 
     try {
-      // Tentative d'enregistrement dans Supabase Auth
-      const supabase = createClient();
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: cleanEmail,
-        password: password,
-        options: {
-          data: {
-            full_name: fullName,
-            role: role,
-            job_title: jobTitle.trim(),
-            organization_name: projectName.trim(),
+      // 1. Inscription distante Supabase si configuré (source autoritaire)
+      if (isSupabaseConfigured()) {
+        const supabase = createClient();
+        const { error: authError } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password: password,
+          options: {
+            data: {
+              full_name: fullName,
+              role: role,
+              job_title: jobTitle.trim(),
+              organization_name: projectName.trim(),
+            },
           },
-        },
-      });
+        });
 
-      if (authError) {
-        console.warn('Note Supabase Auth:', authError.message);
-        // Si Supabase renvoie une erreur (ex: limite de rate ou configuration email), on prévient doucement sans bloquer
+        if (authError) {
+          setErrorMsg(`Erreur d'inscription Supabase : ${authError.message}`);
+          setIsSubmitting(false);
+          return;
+        }
       }
 
-      // Enregistrement dans le store local Sentinel
-      const newUser = registerUser({
+      // 2. Enregistrement sécurisé du sel et empreinte pour validation locale
+      try {
+        const { hash, salt } = await hashPassword(password);
+        localStorage.setItem(`sentinel_cipher_${cleanEmail}`, JSON.stringify({ hash, salt }));
+      } catch (cryptoErr) {
+        console.warn('Note crypto:', cryptoErr);
+      }
+
+      // 3. Enregistrement dans le store local Sentinel
+      registerUser({
         name: fullName,
         email: cleanEmail,
         role,
@@ -95,8 +107,9 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
       );
 
       onClose();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Une erreur est survenue lors de la création du compte.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Une erreur est survenue lors de la création du compte.';
+      setErrorMsg(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -116,43 +129,89 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
     const cleanEmail = loginEmail.trim().toLowerCase();
 
     try {
-      const supabase = createClient();
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
-        password: loginPassword,
-      });
+      // 1. Si Supabase est configuré, authentification autoritaire côté serveur
+      if (isSupabaseConfigured()) {
+        const supabase = createClient();
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password: loginPassword,
+        });
 
-      if (error) {
-        // Si non trouvé dans Supabase distant, vérifions si l'utilisateur existe dans les profils locaux
-        const existingLocalUser = users.find(u => u.email.toLowerCase() === cleanEmail);
-        if (existingLocalUser) {
-          switchCurrentUser(existingLocalUser);
-          addNotification('Session connectée', `Bienvenue de retour, ${existingLocalUser.name}.`, 'system');
-          onClose();
+        if (error) {
+          setErrorMsg(`Identifiants incorrects : ${error.message}`);
+          setIsSubmitting(false);
           return;
         }
-        setErrorMsg(`Erreur de connexion : ${error.message}`);
+
+        if (!data.user) {
+          setErrorMsg('Compte utilisateur introuvable.');
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Rôle autoritaire vérifié par le serveur
+        const serverRole = (data.user.user_metadata?.role as WorkspaceRole) || 'admin';
+        const existingLocalUser = users.find(u => u.email.toLowerCase() === cleanEmail);
+        const resolvedUser: UserType = existingLocalUser ? {
+          ...existingLocalUser,
+          id: data.user.id,
+          role: serverRole,
+        } : registerUser({
+          name: data.user?.user_metadata?.full_name || cleanEmail.split('@')[0],
+          email: cleanEmail,
+          role: serverRole,
+          jobTitle: data.user?.user_metadata?.job_title || 'Administrateur',
+        });
+
+        switchCurrentUser(resolvedUser);
+        addNotification('Session sécurisée', `Connexion réussie avec ${cleanEmail}.`, 'security');
+        onClose();
         return;
       }
 
-      // Utilisateur authentifié via Supabase
-      const existingLocalUser = users.find(u => u.email.toLowerCase() === cleanEmail);
-      if (existingLocalUser) {
-        switchCurrentUser(existingLocalUser);
+      // 2. Mode local / hors-ligne : vérification stricte du mot de passe
+      const storedCipher = localStorage.getItem(`sentinel_cipher_${cleanEmail}`);
+      if (storedCipher) {
+        try {
+          const parsed = JSON.parse(storedCipher);
+          if (parsed.hash && parsed.salt) {
+            const isValid = await verifyPassword(loginPassword, parsed.hash, parsed.salt);
+            if (!isValid) {
+              setErrorMsg('Mot de passe incorrect.');
+              setIsSubmitting(false);
+              return;
+            }
+          }
+        } catch {
+          setErrorMsg('Erreur de validation des identifiants.');
+          setIsSubmitting(false);
+          return;
+        }
       } else {
-        // Enregistrer l'utilisateur connecté dans l'espace local
-        const registered = registerUser({
-          name: data.user?.user_metadata?.full_name || cleanEmail.split('@')[0],
-          email: cleanEmail,
-          role: (data.user?.user_metadata?.role as WorkspaceRole) || 'admin',
-          jobTitle: data.user?.user_metadata?.job_title || 'Administrateur',
-        });
+        const existingLocalUser = users.find(u => u.email.toLowerCase() === cleanEmail);
+        if (existingLocalUser) {
+          // Mot de passe de démonstration requis
+          if (loginPassword !== 'sentinel2026' && loginPassword !== 'admin123') {
+            setErrorMsg('Mot de passe incorrect pour ce profil de démonstration (utiliser "sentinel2026").');
+            setIsSubmitting(false);
+            return;
+          }
+        } else {
+          setErrorMsg('Compte introuvable. Veuillez vérifier vos identifiants.');
+          setIsSubmitting(false);
+          return;
+        }
       }
 
-      addNotification('Session sécurisée', `Connexion Supabase réussie avec ${cleanEmail}.`, 'security');
-      onClose();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Erreur inattendue de connexion.');
+      const existingUser = users.find(u => u.email.toLowerCase() === cleanEmail);
+      if (existingUser) {
+        switchCurrentUser(existingUser);
+        addNotification('Session connectée', `Bienvenue de retour, ${existingUser.name}.`, 'system');
+        onClose();
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erreur inattendue de connexion.';
+      setErrorMsg(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -164,63 +223,53 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="modal-overlay">
       <div 
-        className="w-full max-w-lg bg-white dark:bg-[#1C1C1E] rounded-3xl border border-black/10 dark:border-white/10 shadow-[0_24px_70px_rgba(0,0,0,0.22)] overflow-hidden"
+        className="w-full max-w-lg bg-[#050505] rounded-md border border-[rgba(255,0,0,0.45)] shadow-[0_0_28px_rgba(255,0,0,0.22)] overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
-        {/* En-tête macOS Apple */}
-        <div className="px-6 py-4 border-b border-black/5 dark:border-white/10 flex items-center justify-between bg-[#F5F5F7]/80 dark:bg-[#2C2C2E]/60 backdrop-blur-md">
+        {/* En-tête Console Sentinelle */}
+        <div className="px-5 py-3.5 border-b border-[#242424] flex items-center justify-between bg-[#000000]">
           <div className="flex items-center gap-2.5">
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-[#FF5F56] border border-[#E0443E]" />
-              <span className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123]" />
-              <span className="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29]" />
-            </div>
-            <div className="h-4 w-[1px] bg-black/10 dark:bg-white/10 mx-1" />
-            <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-[#0071E3] dark:text-[#2997FF]" />
-              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                SENTINEL GESTION • Espace Authentification
-              </span>
-            </div>
+            <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-primary)] shadow-[var(--glow-sm)]" />
+            <span className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+              SENTINEL GESTION • AUTHENTIFICATION
+            </span>
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10 transition"
+            className="w-7 h-7 rounded flex items-center justify-center text-white/45 hover:text-white hover:bg-[#0D0D0D] transition"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4 text-[var(--color-primary)]" />
           </button>
         </div>
 
         {/* Corps de la modale */}
         <div className="p-6 space-y-6">
-          {/* Onglets Apple Switcher */}
-          <div className="flex p-1 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E] border border-black/5 dark:border-white/10">
+          {/* Onglets Noir Rouge Blanc */}
+          <div className="tabs w-full flex">
             <button
               onClick={() => { setMode('login'); setErrorMsg(''); }}
-              className={`flex-1 py-2 text-xs font-semibold rounded-xl transition ${
-                mode === 'login'
-                  ? 'bg-white dark:bg-[#1C1C1E] text-slate-900 dark:text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              className={`tab flex-1 py-2 text-xs font-bold uppercase transition ${
+                mode === 'login' ? 'active' : ''
               }`}
+              aria-selected={mode === 'login'}
             >
               Connexion & Sélecteur
             </button>
             <button
               onClick={() => { setMode('register'); setErrorMsg(''); }}
-              className={`flex-1 py-2 text-xs font-semibold rounded-xl transition ${
-                mode === 'register'
-                  ? 'bg-white dark:bg-[#1C1C1E] text-slate-900 dark:text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              className={`tab flex-1 py-2 text-xs font-bold uppercase transition ${
+                mode === 'register' ? 'active' : ''
               }`}
+              aria-selected={mode === 'register'}
             >
-              Créer un Compte Administrateur
+              Créer un Compte
             </button>
           </div>
 
           {errorMsg && (
-            <div className="p-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs font-medium">
+            <div className="alert alert--error text-xs font-mono">
               {errorMsg}
             </div>
           )}
@@ -230,34 +279,28 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  <h3 className="text-sm font-bold text-white uppercase font-ui">
                     Connexion Administrateur
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  <p className="text-xs text-white/45 mt-0.5">
                     Connectez-vous à votre espace projet ou choisissez un compte actif.
                   </p>
                 </div>
                 {/* Sous-bascule Sélecteur / Identifiants */}
-                <div className="flex gap-1 bg-black/5 dark:bg-white/10 p-1 rounded-xl">
+                <div className="tabs">
                   <button
                     type="button"
                     onClick={() => setLoginMethod('quick')}
-                    className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition ${
-                      loginMethod === 'quick'
-                        ? 'bg-white dark:bg-[#1C1C1E] text-slate-900 dark:text-white shadow-sm'
-                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                    }`}
+                    className={`tab ${loginMethod === 'quick' ? 'active' : ''}`}
+                    aria-selected={loginMethod === 'quick'}
                   >
                     Profils
                   </button>
                   <button
                     type="button"
                     onClick={() => setLoginMethod('credentials')}
-                    className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition ${
-                      loginMethod === 'credentials'
-                        ? 'bg-white dark:bg-[#1C1C1E] text-slate-900 dark:text-white shadow-sm'
-                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                    }`}
+                    className={`tab ${loginMethod === 'credentials' ? 'active' : ''}`}
+                    aria-selected={loginMethod === 'credentials'}
                   >
                     E-mail
                   </button>
@@ -323,7 +366,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
                 </form>
               ) : (
                 /* Sélecteur de profils existants */
-                <div className="space-y-2.5">
+                <div className="space-y-2">
                   {users.map(u => {
                     const isCurrent = u.id === currentUser.id;
                     const isSuper = u.role === 'super_admin' || u.isSuperAdmin;
@@ -332,33 +375,31 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
                         key={u.id}
                         type="button"
                         onClick={() => handleSelectUser(u)}
-                        className={`w-full p-3.5 rounded-2xl border text-left transition flex items-center justify-between ${
+                        className={`w-full p-3 rounded-md border text-left transition flex items-center justify-between ${
                           isCurrent
-                            ? 'border-[#0071E3] bg-[#0071E3]/5 dark:bg-[#2997FF]/10 ring-1 ring-[#0071E3]/20'
-                            : 'border-black/5 dark:border-white/10 hover:border-black/15 dark:hover:border-white/20 bg-[#F5F5F7]/50 dark:bg-[#2C2C2E]/40'
+                            ? 'border-[var(--color-primary)] bg-[var(--theme-primary-tint)] shadow-[var(--glow-sm)]'
+                            : 'border-[#242424] hover:border-[var(--color-primary)] bg-[#000000]'
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <img 
-                            src={u.avatar} 
-                            alt={u.name} 
-                            className="w-10 h-10 rounded-full shadow-sm"
-                          />
+                          <div className="w-8 h-8 rounded border border-[var(--color-primary)] bg-[var(--theme-primary-tint)] flex items-center justify-center text-xs font-mono font-bold text-white">
+                            {u.name.substring(0, 2).toUpperCase()}
+                          </div>
                           <div>
-                            <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <div className="text-xs font-bold text-white flex items-center gap-2">
                               <span>{u.name}</span>
                               {isSuper && (
-                                <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-                                  Super Admin
+                                <span className="px-1.5 py-0.2 rounded border border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--theme-primary-tint)] text-[9px] font-mono font-bold uppercase">
+                                  SUPER ADMIN
                                 </span>
                               )}
                               {u.role === 'admin' && (
-                                <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-[#0071E3]/10 text-[#0071E3] dark:text-[#2997FF] border border-[#0071E3]/20">
-                                  Administrateur
+                                <span className="px-1.5 py-0.2 rounded border border-white text-white text-[9px] font-mono font-bold uppercase">
+                                  ADMIN
                                 </span>
                               )}
                             </div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                            <div className="text-[11px] text-white/45 font-mono">
                               {u.jobTitle} • {u.email}
                             </div>
                           </div>
@@ -366,12 +407,12 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
 
                         <div className="flex items-center gap-2">
                           {isCurrent && (
-                            <span className="text-[11px] font-bold text-[#0071E3] dark:text-[#2997FF] flex items-center gap-1">
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              Actif
+                            <span className="text-[11px] font-mono font-bold text-[var(--color-primary)] flex items-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                              ACTIF
                             </span>
                           )}
-                          <ArrowRight className="w-4 h-4 text-slate-400" />
+                          <ArrowRight className="w-4 h-4 text-white/45" />
                         </div>
                       </button>
                     );
@@ -383,7 +424,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
                 <button
                   type="button"
                   onClick={() => setMode('register')}
-                  className="text-xs font-semibold text-[#0071E3] dark:text-[#2997FF] hover:underline"
+                  className="text-xs font-semibold text-[var(--color-primary)] hover:underline uppercase font-mono"
                 >
                   + Créer un nouvel identifiant d'administrateur
                 </button>

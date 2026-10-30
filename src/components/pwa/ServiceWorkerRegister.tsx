@@ -60,37 +60,38 @@ export function ServiceWorkerRegister() {
   if (!showInstallBanner) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 max-w-sm p-4 bg-slate-900/95 border border-indigo-500/30 rounded-2xl shadow-2xl backdrop-blur-md animate-in slide-in-from-bottom duration-300">
+    <div className="fixed bottom-4 right-4 z-50 max-w-sm p-4 bg-[#050505] border border-[var(--red-soft)] rounded-[var(--r-md)] shadow-[var(--glow-card)] animate-in slide-in-from-bottom duration-300">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
+          <div className="w-8 h-8 rounded-[var(--r-xs)] bg-black border border-[var(--red)] flex items-center justify-center text-[var(--red)] shrink-0">
             <Download className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="text-xs font-semibold text-slate-100">Installer Sentinel Gestion</h4>
-            <p className="text-[11px] text-slate-400 mt-0.5">Accédez à vos projets directement depuis votre écran d’accueil et hors-ligne.</p>
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider">INSTALLER SENTINEL GESTION</h4>
+            <p className="text-[11px] text-[var(--white-70)] mt-0.5">Accédez à vos projets directement depuis votre écran d’accueil et hors-ligne.</p>
           </div>
         </div>
         <button
           onClick={handleDismiss}
-          className="text-slate-400 hover:text-slate-200 p-1 rounded-md transition"
+          className="btn btn-ghost btn-icon btn-sm"
+          aria-label="Fermer"
         >
           <X className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      <div className="flex items-center justify-end gap-2 mt-3 pt-2 border-t border-slate-800">
+      <div className="flex items-center justify-end gap-2 mt-3 pt-2 border-t border-[var(--line)]">
         <button
           onClick={handleDismiss}
-          className="px-2.5 py-1 text-[11px] font-medium text-slate-400 hover:text-slate-200 transition"
+          className="btn btn-ghost btn-sm text-[11px]"
         >
-          Plus tard
+          PLUS TARD
         </button>
         <button
           onClick={handleInstallClick}
-          className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-medium rounded-lg shadow-sm transition"
+          className="btn btn-primary btn-sm"
         >
-          Installer l’application
+          INSTALLER L’APPLICATION
         </button>
       </div>
     </div>

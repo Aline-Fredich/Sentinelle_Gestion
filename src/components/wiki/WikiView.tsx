@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { 
   BookOpen, Plus, Trash2, Edit3, Pin, 
-  Search, FileText, Check
+  Search, FileText, Check, X
 } from 'lucide-react';
 import { useSentinel } from '@/lib/store';
 import { WikiPage } from '@/types/sentinel';
@@ -88,18 +88,21 @@ export function WikiView() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* En-tête du module Wiki */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-5 bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-950/50 flex items-center justify-center text-[#0066FF] shadow-sm">
-            <BookOpen className="w-6 h-6" />
+      <div className="panel flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-[6px] border border-red bg-red/10 flex items-center justify-center text-red">
+            <BookOpen className="w-5 h-5 text-red" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">
-              Wiki & Base de Connaissances
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-red shadow-[var(--glow-sm)]" />
+              <h1 className="text-base font-bold text-white uppercase tracking-wider">
+                WIKI & BASE DE CONNAISSANCES
+              </h1>
+            </div>
+            <p className="text-xs text-white/45 mt-0.5">
               Documentation collaborative, comptes-rendus de réunion et spécifications de projet
             </p>
           </div>
@@ -107,34 +110,34 @@ export function WikiView() {
 
         <button
           onClick={() => setShowNewPageModal(true)}
-          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#0066FF] hover:bg-blue-600 rounded-xl shadow-md shadow-blue-500/20 transition"
+          className="btn btn-primary btn-sm"
         >
-          <Plus className="w-4 h-4" />
-          <span>Nouvelle page</span>
+          <Plus className="w-4 h-4 text-white" />
+          <span>NOUVELLE PAGE</span>
         </button>
       </div>
 
-      {/* Interface Wiki 2 colonnes : Arborescence & Contenu */}
+      {/* Interface Wiki 2 colonnes */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         {/* Colonne gauche (1 quart) : Liste des pages */}
-        <div className="p-4 bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <div className="panel space-y-4">
+          <div className="input-group">
+            <Search className="w-4 h-4 text-red pointer-events-none" />
             <input
               type="text"
               value={searchWiki}
               onChange={(e) => setSearchWiki(e.target.value)}
               placeholder="Rechercher une note..."
-              className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+              className="form-input text-xs"
             />
           </div>
 
           <div className="space-y-1">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1">
-              Documents ({projectWikiPages.length})
+            <div className="text-micro font-bold uppercase tracking-wider text-white/45 px-1 py-1">
+              DOCUMENTS ({projectWikiPages.length})
             </div>
             {projectWikiPages.length === 0 ? (
-              <p className="text-xs text-slate-400 p-2 text-center">Aucune page trouvée</p>
+              <p className="text-micro text-white/45 p-2 text-center">Aucune page trouvée</p>
             ) : (
               projectWikiPages.map(page => {
                 const isSelected = page.id === currentPage?.id;
@@ -145,18 +148,18 @@ export function WikiView() {
                       setSelectedPageId(page.id);
                       setIsEditing(false);
                     }}
-                    className={`flex items-center justify-between w-full p-2.5 rounded-xl text-xs font-semibold text-left transition ${
+                    className={`flex items-center justify-between w-full p-2.5 rounded-[6px] text-xs font-bold text-left uppercase tracking-wide transition border ${
                       isSelected
-                        ? 'bg-[#0066FF] text-white shadow-md shadow-blue-500/20'
-                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        ? 'border-red bg-red/10 text-white'
+                        : 'border-transparent text-white/70 hover:bg-[#0D0D0D] hover:text-white'
                     }`}
                   >
                     <div className="flex items-center gap-2 truncate">
-                      <FileText className={`w-3.5 h-3.5 flex-shrink-0 ${isSelected ? 'text-white' : 'text-blue-500'}`} />
+                      <FileText className={`w-3.5 h-3.5 flex-shrink-0 ${isSelected ? 'text-red' : 'text-white/45'}`} />
                       <span className="truncate">{page.title}</span>
                     </div>
                     {page.pinned && (
-                      <Pin className={`w-3 h-3 ${isSelected ? 'text-white' : 'text-amber-500'}`} />
+                      <Pin className={`w-3 h-3 ${isSelected ? 'text-red' : 'text-white/45'}`} />
                     )}
                   </button>
                 );
@@ -166,18 +169,18 @@ export function WikiView() {
         </div>
 
         {/* Colonne droite (3 quarts) : Lecteur / Éditeur de la page */}
-        <div className="lg:col-span-3 bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-6 min-h-[500px]">
+        <div className="lg:col-span-3 panel space-y-6 min-h-[500px]">
           {currentPage ? (
             <div>
               {/* En-tête de la page */}
-              <div className="flex flex-wrap items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 gap-3">
+              <div className="flex flex-wrap items-center justify-between pb-4 border-b border-[#242424] gap-3">
                 <div>
-                  <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-                    <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-semibold uppercase">
-                      {currentPage.category}
+                  <div className="flex items-center gap-2 text-micro font-mono text-white/45 mb-1">
+                    <span className="badge badge--ok text-[9px]">
+                      {currentPage.category.toUpperCase()}
                     </span>
                     <span>•</span>
-                    <span>Rédigé par {currentPage.authorName}</span>
+                    <span>RÉDIGÉ PAR {currentPage.authorName.toUpperCase()}</span>
                   </div>
 
                   {isEditing ? (
@@ -185,10 +188,10 @@ export function WikiView() {
                       type="text"
                       value={editTitle}
                       onChange={(e) => setEditTitle(e.target.value)}
-                      className="text-xl font-bold text-slate-900 dark:text-white px-2 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 w-full"
+                      className="form-input text-lg font-bold"
                     />
                   ) : (
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                    <h1 className="text-xl font-bold text-white uppercase tracking-wide">
                       {currentPage.title}
                     </h1>
                   )}
@@ -198,24 +201,24 @@ export function WikiView() {
                   {isEditing ? (
                     <button
                       onClick={handleSaveEdit}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md transition"
+                      className="btn btn-primary btn-sm"
                     >
-                      <Check className="w-3.5 h-3.5" />
-                      <span>Enregistrer</span>
+                      <Check className="w-3.5 h-3.5 text-white" />
+                      <span>ENREGISTRER</span>
                     </button>
                   ) : (
                     <button
                       onClick={handleStartEdit}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold transition"
+                      className="btn btn-secondary btn-sm"
                     >
-                      <Edit3 className="w-3.5 h-3.5" />
-                      <span>Modifier</span>
+                      <Edit3 className="w-3.5 h-3.5 text-red" />
+                      <span>MODIFIER</span>
                     </button>
                   )}
 
                   <button
                     onClick={() => deleteWikiPage(currentPage.id)}
-                    className="p-2 text-slate-400 hover:text-[#FF1E27] rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    className="btn btn-ghost btn-sm p-2 text-white/45 hover:text-red"
                     title="Supprimer la note"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -230,34 +233,34 @@ export function WikiView() {
                     rows={16}
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
-                    className="w-full p-4 text-sm font-mono rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white leading-relaxed"
+                    className="form-textarea font-mono text-xs leading-relaxed"
                   />
                 ) : (
-                  <div className="space-y-1 pt-1">
+                  <div className="space-y-2 pt-1 font-sans">
                     {currentPage.content.split('\n').map((line, idx) => {
                       if (line.startsWith('# ')) {
-                        return <h1 key={idx} className="text-xl font-bold text-slate-900 dark:text-white mt-4 mb-2 pb-1 border-b border-slate-200 dark:border-slate-800">{line.slice(2)}</h1>;
+                        return <h1 key={idx} className="text-lg font-bold text-white uppercase mt-4 mb-2 pb-1 border-b border-[#242424]">{line.slice(2)}</h1>;
                       } else if (line.startsWith('## ')) {
-                        return <h2 key={idx} className="text-lg font-bold text-slate-800 dark:text-slate-100 mt-3 mb-1.5">{line.slice(3)}</h2>;
+                        return <h2 key={idx} className="text-base font-bold text-white uppercase mt-3 mb-1.5">{line.slice(3)}</h2>;
                       } else if (line.startsWith('### ')) {
-                        return <h3 key={idx} className="text-base font-bold text-slate-800 dark:text-slate-200 mt-2 mb-1">{line.slice(4)}</h3>;
+                        return <h3 key={idx} className="text-sm font-bold text-white uppercase mt-2 mb-1">{line.slice(4)}</h3>;
                       } else if (line.startsWith('> ')) {
                         return (
-                          <blockquote key={idx} className="p-3 my-2 border-l-4 border-[#0066FF] bg-blue-50/50 dark:bg-blue-950/20 text-slate-700 dark:text-slate-300 rounded-r-xl text-sm italic">
+                          <blockquote key={idx} className="p-3 my-2 border-l-2 border-red bg-red/5 text-white/70 text-xs italic">
                             {line.slice(2)}
                           </blockquote>
                         );
                       } else if (line.startsWith('- ') || line.startsWith('* ')) {
                         return (
-                          <div key={idx} className="flex items-start gap-2 ml-2 my-0.5 text-sm text-slate-700 dark:text-slate-300">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#0066FF] mt-2 flex-shrink-0" />
+                          <div key={idx} className="flex items-start gap-2 ml-2 my-0.5 text-xs text-white/70">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red mt-1.5 flex-shrink-0" />
                             <span>{line.slice(2)}</span>
                           </div>
                         );
                       } else if (line.trim().length === 0) {
                         return <div key={idx} className="h-2" />;
                       } else {
-                        return <p key={idx} className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed my-1">{line}</p>;
+                        return <p key={idx} className="text-xs text-white/70 leading-relaxed my-1">{line}</p>;
                       }
                     })}
                   </div>
@@ -265,7 +268,7 @@ export function WikiView() {
               </div>
             </div>
           ) : (
-            <div className="py-20 text-center text-slate-400 text-sm">
+            <div className="empty py-20 text-xs text-white/45">
               Sélectionnez une page de documentation ou créez-en une nouvelle.
             </div>
           )}
@@ -274,15 +277,25 @@ export function WikiView() {
 
       {/* Modale Nouvelle Page */}
       {showNewPageModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-[#0F172A] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-lg w-full p-6 animate-in fade-in zoom-in-95">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4">
-              Créer une page de documentation
-            </h3>
+        <div className="modal-overlay" onClick={() => setShowNewPageModal(false)} role="dialog" aria-modal="true">
+          <div className="modal max-w-lg" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between pb-3 border-b border-[#242424] mb-4">
+              <h3 className="modal-title mb-0">
+                CRÉER UNE PAGE DE DOCUMENTATION
+              </h3>
+              <button
+                onClick={() => setShowNewPageModal(false)}
+                className="btn btn-ghost btn-sm p-1"
+                aria-label="Fermer"
+              >
+                <X className="w-4 h-4 text-white/70" />
+              </button>
+            </div>
+
             <form onSubmit={handleCreatePage} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                  Titre de la page
+              <div className="form-group mb-0">
+                <label className="form-label">
+                  Titre de la page <span className="req">*</span>
                 </label>
                 <input
                   type="text"
@@ -290,18 +303,18 @@ export function WikiView() {
                   value={newPageTitle}
                   onChange={(e) => setNewPageTitle(e.target.value)}
                   placeholder="Ex : Architecture et conventions d'API"
-                  className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                  className="form-input"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+              <div className="form-group mb-0">
+                <label className="form-label">
                   Catégorie
                 </label>
                 <select
                   value={newPageCategory}
                   onChange={(e) => setNewPageCategory(e.target.value as WikiPage['category'])}
-                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                  className="form-select uppercase font-bold text-xs"
                 >
                   <option value="architecture">Architecture Technique</option>
                   <option value="specifications">Spécifications Métier</option>
@@ -311,11 +324,11 @@ export function WikiView() {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5">
+              <div className="space-y-2">
+                <label className="form-label mb-1">
                   Modèles prêts à l'emploi (1 clic)
                 </label>
-                <div className="flex flex-wrap gap-2 mb-3">
+                <div className="flex flex-wrap gap-2 mb-2">
                   <button
                     type="button"
                     onClick={() => {
@@ -323,9 +336,9 @@ export function WikiView() {
                       setNewPageCategory('meeting_notes');
                       setNewPageContent(`# Compte-Rendu de Réunion\n\n**Date :** ${new Date().toLocaleDateString('fr-FR')}\n**Participants :** [Noms des participants]\n\n## 1. Ordre du Jour\n* Point d'avancement des tâches\n* Blocages et risques identifiés\n\n## 2. Décisions Validées\n1. Décision A\n2. Décision B\n\n## 3. Plan d'Actions & Responsables\n* [ ] Action 1 — @Responsable (Échéance : JJ/MM)\n* [ ] Action 2 — @Responsable (Échéance : JJ/MM)`);
                     }}
-                    className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-blue-50 dark:bg-blue-950 text-[#0066FF] border border-blue-200 dark:border-blue-800 hover:bg-blue-100 transition"
+                    className="chip text-[10px]"
                   >
-                    📝 Compte-Rendu de Réunion
+                    📝 COMPTE-RENDU DE RÉUNION
                   </button>
 
                   <button
@@ -335,9 +348,9 @@ export function WikiView() {
                       setNewPageCategory('specifications');
                       setNewPageContent(`# Cahier des Charges & Spécifications\n\n## 1. Contexte & Objectif Métier\nExpliquer ici le problème à résoudre et la valeur apportée aux utilisateurs.\n\n## 2. Spécifications Fonctionnelles\n* **Règle 1 :** Comportement attendu\n* **Règle 2 :** Gestion des cas d'erreur\n\n## 3. Architecture & Modèle de Données\n* Tables impactées :\n* Endpoints d'API / Services :\n\n## 4. Critères d'Acceptation & Tests\n* [ ] Scénario nominal validé\n* [ ] Cas limites testés`);
                     }}
-                    className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-600 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition"
+                    className="chip text-[10px]"
                   >
-                    ⚙️ Spécifications Métier
+                    ⚙️ SPÉCIFICATIONS MÉTIER
                   </button>
 
                   <button
@@ -345,15 +358,15 @@ export function WikiView() {
                     onClick={() => {
                       setNewPageTitle('Guide d’Architecture & Normes');
                       setNewPageCategory('architecture');
-                      setNewPageContent(`# Guide d'Architecture & Bonnes Pratiques\n\n## 1. Stack Technique\n* Frontend : Next.js 16, React 19, Tailwind CSS\n* State : Store réactif TypeScript\n\n## 2. Conventions de Nommage\n* Composants en PascalCase\n* Fichiers utilitaires en camelCase`);
+                      setNewPageContent(`# Guide d'Architecture & Bonnes Pratiques\n\n## 1. Stack Technique\n* Frontend : Next.js 16, React 19, CSS Noir Rouge Blanc\n* State : Store réactif TypeScript\n\n## 2. Conventions de Nommage\n* Composants en PascalCase\n* Fichiers utilitaires en camelCase`);
                     }}
-                    className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-purple-50 dark:bg-purple-950 text-purple-600 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 transition"
+                    className="chip text-[10px]"
                   >
-                    🏛️ Architecture Technique
+                    🏛️ ARCHITECTURE TECHNIQUE
                   </button>
                 </div>
 
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+                <label className="form-label mb-1">
                   Contenu de la documentation (Markdown)
                 </label>
                 <textarea
@@ -361,23 +374,23 @@ export function WikiView() {
                   value={newPageContent}
                   onChange={(e) => setNewPageContent(e.target.value)}
                   placeholder="Rédigez le texte en markdown..."
-                  className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono"
+                  className="form-textarea font-mono text-xs"
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <div className="modal-actions pt-4 border-t border-[#242424]">
                 <button
                   type="button"
                   onClick={() => setShowNewPageModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+                  className="btn btn-secondary btn-sm"
                 >
-                  Annuler
+                  ANNULER
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-xs font-bold text-white bg-[#0066FF] hover:bg-blue-600 rounded-xl shadow-md"
+                  className="btn btn-primary btn-sm"
                 >
-                  Publier la note
+                  PUBLIER LA NOTE
                 </button>
               </div>
             </form>

@@ -7,16 +7,19 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test src/domain/__tests__/domain.test.ts src/lib/importers/__tests__/importers.test.ts src/lib/content/__tests__/content.test.ts src/lib/migration/__tests__/migration.test.ts src/lib/security/__tests__/security.test.ts src/lib/automations/__tests__/automations.test.ts src/lib/payments/__tests__/mtnMomo.test.ts",
+    "test": "node --experimental-strip-types --test src/domain/__tests__/domain.test.ts src/lib/importers/__tests__/importers.test.ts src/lib/content/__tests__/content.test.ts src/lib/migration/__tests__/migration.test.ts src/lib/security/__tests__/security.test.ts src/lib/automations/__tests__/automations.test.ts src/lib/payments/__tests__/mtnMomo.test.ts src/lib/__tests__/theme.test.ts src/lib/__tests__/button.test.ts src/lib/__tests__/tableBadge.test.ts src/lib/__tests__/formsModal.test.ts src/lib/__tests__/navigationViews.test.ts src/lib/__tests__/reportingAnalytics.test.ts src/lib/__tests__/offlineSync.test.ts src/lib/__tests__/accessibility.test.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.118.0",
     "canvas-confetti": "^1.9.4",
     "dexie": "^4.4.6",
     "lucide-react": "^1.55.0",
-    "next": "16.4.0",
+    "next": "^16.4.3",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "zustand": "^5.0.15"
@@ -29,7 +32,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.4.0",
+    "eslint-config-next": "^16.4.3",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

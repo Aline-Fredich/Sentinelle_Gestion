@@ -30,6 +30,8 @@ import {
   dispatchWebhookNotification 
 } from '@/lib/automations/ruleEngine';
 import { formatCurrency } from '@/lib/currencyUtils';
+import { recordSecureAuditEvent } from '@/lib/security/auditTrail';
+import type { AuditActionType } from '@/types/sentinel';
 
 export interface FilterState {
   memberId?: string;
@@ -664,6 +666,27 @@ export function SentinelProvider({ children }: { children: React.ReactNode }) {
       createdAt: new Date().toISOString(),
     };
     setActivities(prev => [newAct, ...prev].slice(0, 200));
+
+    // Enregistrement asynchrone dans la piste d'audit cryptographique SHA-256
+    const auditActionMap: Record<string, AuditActionType> = {
+      task_created: 'task_created',
+      task_updated: 'task_updated',
+      task_status_changed: 'task_updated',
+      task_completed: 'task_updated',
+      project_created: 'project_created',
+      project_archived: 'project_archived',
+      budget_updated: 'budget_updated',
+    };
+    const mappedAction = auditActionMap[actionType] || 'settings_updated';
+    recordSecureAuditEvent({
+      userId: currentUser.id,
+      userName: currentUser.name,
+      action: mappedAction,
+      entityType: taskId ? 'task' : (projectId ? 'project' : 'system'),
+      entityId: taskId || projectId || workspace.id,
+      details: { description, actionType },
+      workspaceId: workspace.id,
+    }).catch(err => console.warn('Enregistrement piste d audit différé:', err));
   }, [workspace.id, activeProjectId, currentUser]);
 
   // Gestion des notifications

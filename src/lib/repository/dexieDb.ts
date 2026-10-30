@@ -23,6 +23,7 @@ import {
   User,
   Workspace,
   ProjectBudget,
+  AuditEntry,
 } from '@/types/sentinel';
 
 export class SentinelDatabase extends Dexie {
@@ -44,6 +45,7 @@ export class SentinelDatabase extends Dexie {
   invitations!: Table<WorkspaceInvitation, string>;
   users!: Table<User, string>;
   workspaces!: Table<Workspace, string>;
+  auditLogs!: Table<AuditEntry, string>;
 
   constructor() {
     super('SentinelGestionDB');
@@ -67,6 +69,28 @@ export class SentinelDatabase extends Dexie {
       invitations: 'id, workspaceId, email, status',
       users: 'id, email, role',
       workspaces: 'id, slug',
+    });
+
+    this.version(2).stores({
+      projects: 'id, workspaceId, status, priority, createdAt',
+      phases: 'id, projectId, order',
+      tasks: 'id, projectId, phaseId, status, priority, assigneeId, dueDate, createdAt',
+      dependencies: 'id, projectId, predecessorTaskId, successorTaskId',
+      milestones: 'id, projectId, dueDate, status',
+      documents: 'id, projectId, category, updatedAt',
+      expenses: 'id, projectId, category, status, date',
+      budgets: 'id, projectId',
+      timeEntries: 'id, projectId, taskId, userId, date',
+      sprints: 'id, projectId, status, startDate, endDate',
+      wikiPages: 'id, projectId, slug, category, updatedAt',
+      risks: 'id, projectId, severity, status, createdAt',
+      shares: 'id, projectId, sharedWithEmail',
+      activity: 'id, workspaceId, projectId, createdAt',
+      notifications: 'id, userId, read, createdAt',
+      invitations: 'id, workspaceId, email, status',
+      users: 'id, email, role',
+      workspaces: 'id, slug',
+      auditLogs: 'id, sequenceNumber, userId, action, entityType, timestamp, workspaceId',
     });
   }
 }

@@ -74,4 +74,63 @@ describe('Lot 4 — Passerelle Paiements Mobile Money MTN Congo-Brazzaville', ()
     assert.equal(secondCall.alreadyProcessed, true);
     assert.ok(secondCall.message.includes('déjà traitée'));
   });
+
+  it('5. Valide fidèlement la signature HMAC-SHA256 du webhook et bloque les falsifications', async () => {
+    const { calculateHmacSha256, verifyMtnWebhookSignature } = await import('../mtnMomo.ts');
+    const secret = 'cle_secrete_mtn_2026_test';
+    const body = JSON.stringify({ transactionId: 'tx_123', amount: 15000, currency: 'XAF' });
+
+    // Signature valide calculée
+    const validSig = await calculateHmacSha256(body, secret);
+    const isValid = await verifyMtnWebhookSignature(body, validSig, secret);
+    assert.equal(isValid, true);
+
+    // Signature avec préfixe 'sha256='
+    const isValidPrefixed = await verifyMtnWebhookSignature(body, `sha256=${validSig}`, secret);
+    assert.equal(isValidPrefixed, true);
+
+    // Signature falsifiée ou erronée
+    const isInvalid = await verifyMtnWebhookSignature(body, '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef', secret);
+    assert.equal(isInvalid, false);
+
+    // Signature absente
+    const isMissing = await verifyMtnWebhookSignature(body, null, secret);
+    assert.equal(isMissing, false);
+  });
+
+  it('6. Rejette les incohérences de montant/devise et les transactions non enregistrées en mode strict', async () => {
+    const tx = await initiateMtnMomoPayment({
+      planCode: 'team',
+      planName: 'Team Pack',
+      amount: 50000,
+      billingCycle: 'yearly',
+      phoneNumber: '06 600 11 22',
+      payerName: 'Direction',
+    });
+
+    // Incohérence de montant
+    const alteredPayload = {
+      transactionId: tx.id,
+      reference: tx.reference,
+      status: 'SUCCESSFUL' as const,
+      amount: 5000, // Altéré ! Attendu : 50000
+      currency: 'XAF',
+    };
+    const alteredResult = processMtnMomoWebhook(alteredPayload, undefined, { strictRegistry: true });
+    assert.equal(alteredResult.success, false);
+    assert.ok(alteredResult.message.includes('Incohérence de montant'));
+
+    // Transaction inconnue en mode strict
+    const unknownPayload = {
+      transactionId: 'tx_totalement_inconnue_999',
+      reference: 'MTN-CG-UNKNOWN-999',
+      status: 'SUCCESSFUL' as const,
+      amount: 10000,
+      currency: 'XAF',
+    };
+    const unknownResult = processMtnMomoWebhook(unknownPayload, undefined, { strictRegistry: true });
+    assert.equal(unknownResult.success, false);
+    assert.ok(unknownResult.message.includes('inconnue du registre'));
+  });
 });
+
